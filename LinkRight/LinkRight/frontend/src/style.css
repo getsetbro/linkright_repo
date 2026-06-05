@@ -1,0 +1,96 @@
+/* Link Right — Global Styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Scrollbar styling — no Tailwind equivalent */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Dark scrollbar for chooser / tray — no Tailwind equivalent */
+.dark-scroll ::-webkit-scrollbar-track { background: #1f2937; }
+.dark-scroll ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+.dark-scroll ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+
+.tray-root ::-webkit-scrollbar { width: 4px; }
+.tray-root ::-webkit-scrollbar-track { background: transparent; }
+.tray-root ::-webkit-scrollbar-thumb { background: #374151; border-radius: 2px; }
+
+/* Fade-in animation — no Tailwind equivalent without config */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in {
+  animation: fadeIn 0.2s ease forwards;
+}
+
+/* Toggle switch — requires pseudo-element tricks not possible with Tailwind utilities */
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #d1d5db;
+  border-radius: 20px;
+  transition: 0.2s;
+}
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: 0.2s;
+}
+.toggle input:checked + .toggle-slider {
+  background-color: #3b82f6;
+}
+.toggle input:checked + .toggle-slider:before {
+  transform: translateX(16px);
+}
+
+/* Disabled button state */
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Focus ring */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}

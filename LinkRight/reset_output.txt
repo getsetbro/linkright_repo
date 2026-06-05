@@ -1,0 +1,17 @@
+============================================
+ Link Right - Reset + Rebuild + Run
+ (Simulates a fresh install for testing)
+============================================
+
+[1/3] Cleaning previous install state...
+  Done.
+[2/3] Building LinkRight.exe...
+  Build successful.
+[3/3] Launching LinkRight.exe as a fresh user...
+
+============================================
+ Done! LinkRight is running fresh.
+ Close it and run this script again to
+ repeat the clean test cycle.
+============================================
+
