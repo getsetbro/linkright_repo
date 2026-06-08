@@ -87,8 +87,8 @@ To have the tray start automatically with Windows, add a shortcut to:
 Open the **General** tab in Link Right settings to configure:
 
 - **Registration** — register or unregister Link Right as a Windows browser
-- **Default browser** — the browser used when fallback behavior is set to "Use Default Browser"
-- **Fallback behavior** — choose between showing the Chooser popup or silently using the default browser when no rule matches
+- **Primary browser** — the browser used when fallback behavior is set to "Use Primary Browser"
+- **Fallback behavior** — choose between showing the Chooser popup or silently using the primary browser when no rule matches
 
 ---
 
@@ -99,7 +99,7 @@ The **Browsers** tab shows all detected browsers and profiles. You can:
 - **Refresh** — re-scan for newly installed browsers
 - **Add** — manually add a browser not auto-detected (provide a name and path to the exe)
 - **Remove** — remove a manually added browser
-- **Set as Default** — set the default browser used for fallback routing
+- **Set as Primary** — set the primary browser used for fallback routing
 
 ---
 

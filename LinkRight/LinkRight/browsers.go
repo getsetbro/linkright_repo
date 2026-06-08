@@ -197,9 +197,6 @@ func chromiumUserDataDir(exePath string) string {
 	pathLower := strings.ToLower(exePath)
 	localAppData := os.Getenv("LOCALAPPDATA")
 
-	if strings.Contains(pathLower, "chrome") {
-		return filepath.Join(localAppData, "Google", "Chrome", "User Data")
-	}
 	if strings.Contains(pathLower, "msedge") || strings.Contains(pathLower, "edge") {
 		return filepath.Join(localAppData, "Microsoft", "Edge", "User Data")
 	}
@@ -211,6 +208,23 @@ func chromiumUserDataDir(exePath string) string {
 	}
 	if strings.Contains(pathLower, "vivaldi") {
 		return filepath.Join(localAppData, "Vivaldi", "User Data")
+	}
+	if strings.Contains(pathLower, "chrome") {
+		// Determine the Chrome channel from the install path.
+		// Chrome Dev:    …\Google\Chrome Dev\Application\chrome.exe
+		// Chrome Canary: …\Google\Chrome SxS\Application\chrome.exe
+		// Chrome Beta:   …\Google\Chrome Beta\Application\chrome.exe
+		// Chrome Stable: …\Google\Chrome\Application\chrome.exe
+		switch {
+		case strings.Contains(pathLower, "chrome dev"):
+			return filepath.Join(localAppData, "Google", "Chrome Dev", "User Data")
+		case strings.Contains(pathLower, "chrome sxs"):
+			return filepath.Join(localAppData, "Google", "Chrome SxS", "User Data")
+		case strings.Contains(pathLower, "chrome beta"):
+			return filepath.Join(localAppData, "Google", "Chrome Beta", "User Data")
+		default:
+			return filepath.Join(localAppData, "Google", "Chrome", "User Data")
+		}
 	}
 	return ""
 }

@@ -69,7 +69,7 @@ export namespace main {
 		}
 	}
 	
-	export class ChooserRequest {
+	export class PickerRequest {
 	    url: string;
 	    domain: string;
 	    reason: string;
@@ -77,7 +77,7 @@ export namespace main {
 	    browsers: Browser[];
 	
 	    static createFrom(source: any = {}) {
-	        return new ChooserRequest(source);
+	        return new PickerRequest(source);
 	    }
 	
 	    constructor(source: any = {}) {
@@ -107,7 +107,7 @@ export namespace main {
 		    return a;
 		}
 	}
-	export class ChooserResponse {
+	export class PickerResponse {
 	    browserPath: string;
 	    browserName: string;
 	    profile: string;
@@ -115,7 +115,7 @@ export namespace main {
 	    alwaysUse: boolean;
 	
 	    static createFrom(source: any = {}) {
-	        return new ChooserResponse(source);
+	        return new PickerResponse(source);
 	    }
 	
 	    constructor(source: any = {}) {
@@ -127,18 +127,16 @@ export namespace main {
 	        this.alwaysUse = source["alwaysUse"];
 	    }
 	}
-	export class ChooserSettings {
-	    iconSize: string;
+	export class PickerSettings {
 	    showBrowserNames: boolean;
 	    showURL: boolean;
 	
 	    static createFrom(source: any = {}) {
-	        return new ChooserSettings(source);
+	        return new PickerSettings(source);
 	    }
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.iconSize = source["iconSize"];
 	        this.showBrowserNames = source["showBrowserNames"];
 	        this.showURL = source["showURL"];
 	    }
@@ -217,7 +215,8 @@ export namespace main {
 	    fallbackBehavior: string;
 	    rules: Rule[];
 	    firstRun: boolean;
-	    chooserSettings: ChooserSettings;
+	    pickerSettings: PickerSettings;
+	    startWithWindows: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new Config(source);
@@ -230,7 +229,8 @@ export namespace main {
 	        this.fallbackBehavior = source["fallbackBehavior"];
 	        this.rules = this.convertValues(source["rules"], Rule);
 	        this.firstRun = source["firstRun"];
-	        this.chooserSettings = this.convertValues(source["chooserSettings"], ChooserSettings);
+	        this.pickerSettings = this.convertValues(source["pickerSettings"], PickerSettings);
+	        this.startWithWindows = source["startWithWindows"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

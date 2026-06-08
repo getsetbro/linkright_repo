@@ -6,7 +6,7 @@
 
 #define AppName      "Link Right"
 #define AppVersion   "1.0.0"
-#define AppPublisher "seth.broweleit"
+#define AppPublisher "Seth Broweleit"
 #define AppExeName   "LinkRight.exe"
 #define AppId        "{{A7F3C2D1-8B4E-4F9A-B6C5-3D2E1F0A9B8C}"
 

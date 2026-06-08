@@ -1,14 +1,23 @@
-// Link Right — Main UI (Settings + Chooser)
+// Link Right — Main UI (Settings + Picker)
 import * as App from '../wailsjs/go/main/App.js';
 import * as Runtime from '../wailsjs/runtime/runtime.js';
+
+// ─── Browser SVG Assets ───────────────────────────────────────────────────────
+import svgBrave   from './assets/brave.svg?url';
+import svgBrowser from './assets/browser.svg?url';
+import svgChrome  from './assets/chrome.svg?url';
+import svgEdge    from './assets/edge.svg?url';
+import svgFirefox from './assets/firefox.svg?url';
+import svgOpera   from './assets/opera.svg?url';
+import svgTor     from './assets/tor.svg?url';
 
 // ─── State ───────────────────────────────────────────────────────────────────
 let state = {
   // Mode
-  mode: 'settings',        // 'settings' | 'chooser'
+  mode: 'settings',        // 'settings' | 'picker'
 
   // Settings UI
-  tab: 'general',          // 'general' | 'browsers' | 'rules' | 'prompt' | 'icons'
+  tab: 'general',          // 'general' | 'browsers' | 'rules' | 'picker'
   browsers: [],
   rules: [],
   config: {},
@@ -17,26 +26,29 @@ let state = {
   editingRule: null,
   dragSrcIndex: null,
 
-  // Chooser UI
-  chooserData: null,       // ChooserRequest
-  chooserSettings: {},     // ChooserSettings
+  // Picker UI
+  pickerData: null,        // PickerRequest
+  pickerSettings: {},      // PickerSettings
   selectedBrowserIndex: 0,
   selectedProfileId: '',
   alwaysUse: false,
 
   // First-run
   showFirstRun: false,
+
+  // Startup tray setting
+  startWithWindows: true,
 };
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
   try {
-    // Check if we're in chooser mode (launched with a URL)
-    let isChooser = false;
-    try { isChooser = await App.IsChooserMode(); } catch (_) {}
+    // Check if we're in picker mode (launched with a URL)
+    let isPicker = false;
+    try { isPicker = await App.IsPickerMode(); } catch (_) {}
 
-    if (isChooser) {
-        state.mode = 'chooser';
+    if (isPicker) {
+        state.mode = 'picker';
 
         try {
           // Process the URL — if a rule matches and browser launches, window closes
@@ -45,32 +57,32 @@ window.addEventListener('load', async () => {
 
           if (result === 'launched') {
             // Browser launched successfully — close this window
-            await App.CancelChooser();
+            await App.CancelPicker();
             return;
           }
 
-          // Need to show chooser — load data
-          const [chooserData, chooserSettings] = await Promise.all([
-            App.GetChooserData(),
-            App.GetChooserSettings(),
+          // Need to show picker — load data
+          const [pickerData, pickerSettings] = await Promise.all([
+            App.GetPickerData(),
+            App.GetPickerSettings(),
           ]);
-          state.chooserData = chooserData;
-          state.chooserSettings = chooserSettings;
+          state.pickerData = pickerData;
+          state.pickerSettings = pickerSettings;
 
           // Default: select first browser, first profile
-          if (chooserData.browsers && chooserData.browsers.length > 0) {
+          if (pickerData.browsers && pickerData.browsers.length > 0) {
             state.selectedBrowserIndex = 0;
-            const firstBrowser = chooserData.browsers[0];
+            const firstBrowser = pickerData.browsers[0];
             state.selectedProfileId = firstBrowser.profiles && firstBrowser.profiles.length > 0
               ? firstBrowser.profiles[0].id
               : '';
           }
         } catch (e) {
-          // Any failure in URL processing → show chooser with empty data (graceful fallback)
-          console.warn('URL processing failed, showing chooser:', e);
-          if (!state.chooserData) {
-            state.chooserData = { url: '', domain: '', reason: 'error', warning: '', browsers: [] };
-            try { state.chooserData.browsers = await App.GetBrowsers(); } catch (_) {}
+          // Any failure in URL processing → show picker with empty data (graceful fallback)
+          console.warn('URL processing failed, showing picker:', e);
+          if (!state.pickerData) {
+            state.pickerData = { url: '', domain: '', reason: 'error', warning: '', browsers: [] };
+            try { state.pickerData.browsers = await App.GetBrowsers(); } catch (_) {}
           }
         }
 
@@ -88,6 +100,7 @@ window.addEventListener('load', async () => {
         state.config = config || {};
         state.appStatus = appStatus || {};
         state.validations = await App.ValidateRules().catch(() => []);
+        state.startWithWindows = await App.GetStartWithWindows().catch(() => true);
 
         // First-run: show welcome prompt if not yet set as default browser
         try {
@@ -109,9 +122,9 @@ window.addEventListener('load', async () => {
 
 // ─── Keyboard Handler ─────────────────────────────────────────────────────────
 function handleKeyDown(e) {
-  if (state.mode === 'chooser') {
+  if (state.mode === 'picker') {
     if (e.key === 'Escape') {
-      cancelChooser();
+      cancelPicker();
       return;
     }
     if (e.key === 'Enter') {
@@ -120,9 +133,9 @@ function handleKeyDown(e) {
     }
     // Number keys 1-9 select browser
     const num = parseInt(e.key);
-    if (!isNaN(num) && num >= 1 && state.chooserData) {
+    if (!isNaN(num) && num >= 1 && state.pickerData) {
       const idx = num - 1;
-      if (idx < state.chooserData.browsers.length) {
+      if (idx < state.pickerData.browsers.length) {
         selectBrowser(idx);
       }
     }
@@ -137,8 +150,8 @@ function handleKeyDown(e) {
 
 // ─── Render ───────────────────────────────────────────────────────────────────
 function render() {
-  if (state.mode === 'chooser') {
-    renderChooserMode();
+  if (state.mode === 'picker') {
+    renderPickerMode();
   } else {
     renderSettingsMode();
   }
@@ -177,7 +190,7 @@ function renderTrayMode() {
       <div class="flex-1 overflow-y-auto overflow-x-hidden">
         ${browsers.map((b, i) => {
           const isDefault = b.name === defaultBrowser;
-          const icon = getBrowserEmoji(b);
+          const icon = getBrowserEmoji(b, '18px');
           const num = i + 1;
           return `
             <div class="${rowBase} ${rowHover} tray-browser-row" data-browser-name="${esc(b.name)}">
@@ -292,10 +305,10 @@ function handleTrayKeyDown(e) {
   }
 }
 
-// ─── CHOOSER MODE ─────────────────────────────────────────────────────────────
-function renderChooserMode() {
-  const data = state.chooserData;
-  const settings = state.chooserSettings || { iconSize: 'large', showBrowserNames: true, showURL: true };
+// ─── PICKER MODE ──────────────────────────────────────────────────────────────
+function renderPickerMode() {
+  const data = state.pickerData;
+  const settings = state.pickerSettings || { showBrowserNames: true, showURL: true };
 
   if (!data) {
     document.getElementById('app').innerHTML = `
@@ -305,7 +318,6 @@ function renderChooserMode() {
     return;
   }
 
-  const iconSize = settings.iconSize || 'large';
   const showNames = settings.showBrowserNames !== false;
   const showURL = settings.showURL !== false;
 
@@ -313,13 +325,13 @@ function renderChooserMode() {
   const selectedBrowser = browsers[state.selectedBrowserIndex] || null;
 
   document.getElementById('app').innerHTML = `
-    <div class="chooser-root flex flex-col h-screen bg-gray-900 text-gray-100 select-none overflow-hidden">
+    <div class="picker-root flex flex-col h-screen bg-gray-900 text-gray-100 select-none overflow-hidden">
 
       <!-- Frameless title bar / drag region -->
       <div class="flex items-center h-8 bg-gray-900 select-none flex-shrink-0"
            style="--wails-draggable: drag">
         <span class="flex-1 pl-3 text-xs text-gray-500">Open with…</span>
-        <button id="btn-chooser-close"
+        <button id="btn-picker-close"
           class="w-9 h-8 flex items-center justify-center text-gray-500 hover:text-white hover:bg-red-600 transition-colors text-sm leading-none"
           style="--wails-draggable: no-drag"
           title="Close">&#x2715;</button>
@@ -346,14 +358,14 @@ function renderChooserMode() {
       <!-- Browser grid -->
       <div class="flex-1 overflow-y-auto px-4 py-2">
         <div class="flex flex-wrap gap-2.5 justify-center py-1">
-          ${browsers.map((b, i) => renderChooserBrowserCard(b, i, iconSize, showNames)).join('')}
+          ${browsers.map((b, i) => renderPickerBrowserCard(b, i, showNames)).join('')}
         </div>
       </div>
 
       <!-- Profile selector (shown when selected browser has multiple profiles) -->
       ${selectedBrowser && selectedBrowser.profiles && selectedBrowser.profiles.length > 1 ? `
       <div class="px-4 pb-2">
-        <select id="chooser-profile" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+        <select id="picker-profile" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
           ${selectedBrowser.profiles.map(p => `
             <option value="${esc(p.id)}" ${state.selectedProfileId === p.id ? 'selected' : ''}>${esc(p.name)}</option>
           `).join('')}
@@ -364,15 +376,15 @@ function renderChooserMode() {
       <!-- Footer -->
       <div class="px-4 pb-4 pt-2 border-t border-gray-800 space-y-3">
         <label class="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" id="chooser-always-use" class="accent-blue-500 w-4 h-4" ${state.alwaysUse ? 'checked' : ''}>
+          <input type="checkbox" id="picker-always-use" class="accent-blue-500 w-4 h-4" ${state.alwaysUse ? 'checked' : ''}>
           <span class="text-xs text-gray-400">Always use this browser for <span class="text-gray-300 font-medium">${esc(data.domain || 'this site')}</span></span>
         </label>
         <div class="flex gap-2">
-          <button id="btn-chooser-cancel"
+          <button id="btn-picker-cancel"
             class="flex-1 py-2 text-sm text-gray-400 hover:text-gray-200 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors border border-gray-700">
             Cancel
           </button>
-          <button id="btn-chooser-open"
+          <button id="btn-picker-open"
             class="flex-1 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors ${!selectedBrowser ? 'opacity-50 cursor-not-allowed' : ''}">
             Open
           </button>
@@ -382,20 +394,15 @@ function renderChooserMode() {
     </div>
   `;
 
-  attachChooserListeners();
+  attachPickerListeners();
 }
 
-function renderChooserBrowserCard(browser, index, iconSize, showNames) {
+function renderPickerBrowserCard(browser, index, showNames) {
   const isSelected = index === state.selectedBrowserIndex;
-  const icon = getBrowserEmoji(browser);
+  const icon = getBrowserEmoji(browser, '24px');
   const num = index + 1;
 
-  // Size variants: width × height × padding × icon-size
-  const sizeStyles = iconSize === 'small'
-    ? { card: 'w-16 h-[72px] pt-2 px-1 pb-1', icon: 'text-2xl' }
-    : iconSize === 'medium'
-    ? { card: 'w-20 h-[88px] pt-2.5 px-1.5 pb-1.5', icon: 'text-[1.75rem]' }
-    : { card: 'w-24 h-[104px] pt-3 px-2 pb-2', icon: 'text-[2.25rem]' };
+  const sizeStyles = { card: 'w-16 h-[72px] pt-2 px-1 pb-1', icon: '' };
 
   const baseCard = `relative flex flex-col items-center justify-center rounded-xl border-2 cursor-pointer select-none transition-all duration-150`;
   const stateCard = isSelected
@@ -406,7 +413,7 @@ function renderChooserBrowserCard(browser, index, iconSize, showNames) {
   const nameColor = isSelected ? 'text-blue-200' : 'text-gray-400';
 
   return `
-    <div class="chooser-browser-card ${baseCard} ${stateCard} ${sizeStyles.card}"
+    <div class="picker-browser-card ${baseCard} ${stateCard} ${sizeStyles.card}"
          data-browser-index="${index}"
          title="${esc(browser.name)}">
       <div class="absolute top-1 left-1.5 text-[0.65rem] font-semibold leading-none ${numColor}">${num <= 9 ? num : ''}</div>
@@ -416,12 +423,12 @@ function renderChooserBrowserCard(browser, index, iconSize, showNames) {
   `;
 }
 
-function attachChooserListeners() {
+function attachPickerListeners() {
   // Frameless close button
-  document.getElementById('btn-chooser-close')?.addEventListener('click', cancelChooser);
+  document.getElementById('btn-picker-close')?.addEventListener('click', cancelPicker);
 
   // Browser card clicks
-  document.querySelectorAll('.chooser-browser-card').forEach(card => {
+  document.querySelectorAll('.picker-browser-card').forEach(card => {
     card.addEventListener('click', () => {
       const idx = parseInt(card.dataset.browserIndex);
       selectBrowser(idx);
@@ -434,7 +441,7 @@ function attachChooserListeners() {
   });
 
   // Profile selector
-  const profileSel = document.getElementById('chooser-profile');
+  const profileSel = document.getElementById('picker-profile');
   if (profileSel) {
     profileSel.addEventListener('change', () => {
       state.selectedProfileId = profileSel.value;
@@ -442,7 +449,7 @@ function attachChooserListeners() {
   }
 
   // Always use checkbox
-  const alwaysUseChk = document.getElementById('chooser-always-use');
+  const alwaysUseChk = document.getElementById('picker-always-use');
   if (alwaysUseChk) {
     alwaysUseChk.addEventListener('change', () => {
       state.alwaysUse = alwaysUseChk.checked;
@@ -450,15 +457,15 @@ function attachChooserListeners() {
   }
 
   // Open button
-  document.getElementById('btn-chooser-open')?.addEventListener('click', openWithSelected);
+  document.getElementById('btn-picker-open')?.addEventListener('click', openWithSelected);
 
   // Cancel button
-  document.getElementById('btn-chooser-cancel')?.addEventListener('click', cancelChooser);
+  document.getElementById('btn-picker-cancel')?.addEventListener('click', cancelPicker);
 }
 
 function selectBrowser(idx) {
   state.selectedBrowserIndex = idx;
-  const browser = state.chooserData.browsers[idx];
+  const browser = state.pickerData.browsers[idx];
   if (browser && browser.profiles && browser.profiles.length > 0) {
     state.selectedProfileId = browser.profiles[0].id;
   } else {
@@ -468,14 +475,14 @@ function selectBrowser(idx) {
 }
 
 async function openWithSelected() {
-  const browsers = state.chooserData?.browsers || [];
+  const browsers = state.pickerData?.browsers || [];
   const browser = browsers[state.selectedBrowserIndex];
   if (!browser) return;
 
   // Get profile
   let profileId = state.selectedProfileId;
   let profileName = '';
-  const profileSel = document.getElementById('chooser-profile');
+  const profileSel = document.getElementById('picker-profile');
   if (profileSel) {
     profileId = profileSel.value;
     profileName = profileSel.options[profileSel.selectedIndex]?.text || '';
@@ -485,7 +492,7 @@ async function openWithSelected() {
     profileName = p.name;
   }
 
-  const alwaysUse = document.getElementById('chooser-always-use')?.checked || false;
+  const alwaysUse = document.getElementById('picker-always-use')?.checked || false;
 
   const resp = {
     browserPath: browser.path,
@@ -498,15 +505,15 @@ async function openWithSelected() {
   try {
     await App.OpenWithBrowser(resp);
     // Close the window after launching
-    await App.CancelChooser();
+    await App.CancelPicker();
   } catch (e) {
     showToast('Failed to open browser: ' + e, 'error');
   }
 }
 
-async function cancelChooser() {
+async function cancelPicker() {
   try {
-    await App.CancelChooser();
+    await App.CancelPicker();
   } catch (e) {
     // Window may already be closing
   }
@@ -522,9 +529,7 @@ function renderSettingsMode() {
         ${state.tab === 'general'  ? renderGeneral()  : ''}
         ${state.tab === 'browsers' ? renderBrowsers() : ''}
         ${state.tab === 'rules'    ? renderRules()    : ''}
-        ${state.tab === 'prompt'   ? renderPrompt()   : ''}
-        ${state.tab === 'icons'    ? renderIconsTab() : ''}
-        ${state.tab === 'advanced' ? renderAdvanced() : ''}
+        ${state.tab === 'picker'   ? renderPicker()   : ''}
       </div>
     </div>
     ${state.editingRule !== null ? renderRuleEditorOverlay() : ''}
@@ -606,6 +611,10 @@ function renderTitleBar() {
         class="w-10 h-9 flex items-center justify-center text-gray-400 hover:text-gray-100 hover:bg-gray-700 transition-colors text-base leading-none"
         style="--wails-draggable: no-drag"
         title="Minimize">&#x2014;</button>
+      <button id="btn-titlebar-maximize"
+        class="w-10 h-9 flex items-center justify-center text-gray-400 hover:text-gray-100 hover:bg-gray-700 transition-colors leading-none"
+        style="--wails-draggable: no-drag; font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.8rem;"
+        title="Maximize / Restore">&#xE922;</button>
       <button id="btn-titlebar-close"
         class="w-10 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-red-600 transition-colors text-base leading-none"
         style="--wails-draggable: no-drag"
@@ -621,50 +630,20 @@ function renderTabs() {
     { id: 'general',  label: 'General',  icon: '\uE713' }, // Settings
     { id: 'browsers', label: 'Browsers', icon: '\uE774' }, // Slideshow (globe-like)
     { id: 'rules',    label: 'Rules',    icon: '\uE71C' }, // Filter
-    { id: 'prompt',   label: 'Prompt',   icon: '\uE8A7' }, // Work (dialog/prompt)
-    { id: 'icons',    label: 'Icons',    icon: '\uE77B' }, // Color
-    { id: 'advanced', label: 'Advanced', icon: '\uE90F' }, // Admin/wrench
+    { id: 'picker',   label: 'Picker',   icon: '\uE8A7' }, // Work (dialog/picker)
   ];
   return `
-    <div class="flex justify-center gap-6 py-2 border-b border-gray-700 bg-gray-900">
+    <div class="flex justify-center gap-1 py-2 border-b border-gray-700 bg-gray-900 overflow-x-hidden">
       ${tabs.map(t => `
-        <button data-tab="${t.id}" class="flex flex-col items-center gap-0.5 px-4 py-1 rounded text-xs transition-colors
+        <button data-tab="${t.id}" class="flex flex-col items-center gap-0.5 px-3 py-1 rounded text-xs transition-colors min-w-0
           ${state.tab === t.id
             ? 'text-blue-400 border-b-2 border-blue-400'
-            : 'text-gray-400 hover:text-gray-200'}">
+            : 'text-gray-400 hover:text-gray-200'}"
+          title="${t.label}">
           <span class="text-lg leading-none" style="font-family:'Segoe MDL2 Assets',sans-serif">${t.icon}</span>
-          <span>${t.label}</span>
+          <span class="leading-none">${t.label}</span>
         </button>
       `).join('')}
-    </div>
-  `;
-}
-
-// ─── Advanced Tab ─────────────────────────────────────────────────────────────
-function renderAdvanced() {
-  const s = state.appStatus;
-  return `
-    <div class="p-5 space-y-5 overflow-y-auto h-full">
-
-      <section class="space-y-2">
-        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Browser Registration</h2>
-        <div class="bg-gray-800 rounded-lg p-4 space-y-3">
-          <div class="text-xs text-gray-500 mb-1">Register or unregister Link Right as a Windows browser. Unregistering removes all registry entries without deleting the app.</div>
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="text-sm font-medium text-gray-200">Registered as browser</div>
-              <div class="text-xs text-gray-400">${s.isRegistered ? 'Link Right is registered in Windows' : 'Not registered'}</div>
-            </div>
-            <div class="flex gap-2">
-              ${s.isRegistered
-                ? `<button id="btn-unregister" class="px-3 py-1.5 text-xs bg-red-700 hover:bg-red-600 text-white rounded transition-colors">Unregister</button>`
-                : `<button id="btn-register" class="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors">Register</button>`
-              }
-            </div>
-          </div>
-        </div>
-      </section>
-
     </div>
   `;
 }
@@ -698,20 +677,20 @@ function renderGeneral() {
         <div class="bg-gray-800 rounded-lg p-4 space-y-3">
           <div class="text-xs text-gray-400 mb-2">When no rule matches a link:</div>
           <label class="flex items-center gap-3 cursor-pointer">
-            <input type="radio" name="fallback" value="chooser" class="accent-blue-500"
-              ${(c.fallbackBehavior || 'chooser') === 'chooser' ? 'checked' : ''}>
+            <input type="radio" name="fallback" value="picker" class="accent-blue-500"
+              ${(c.fallbackBehavior || 'default') === 'picker' ? 'checked' : ''}>
             <div>
-              <div class="text-sm text-gray-200">Show browser chooser</div>
+              <div class="text-sm text-gray-200">Show browser picker</div>
               <div class="text-xs text-gray-400">Ask which browser to use each time</div>
             </div>
           </label>
           <label class="flex items-center gap-3 cursor-pointer">
             <input type="radio" name="fallback" value="default" class="accent-blue-500"
-              ${c.fallbackBehavior === 'default' ? 'checked' : ''}>
+              ${(c.fallbackBehavior || 'default') === 'default' ? 'checked' : ''}>
             <div>
-              <div class="text-sm text-gray-200">Use default browser</div>
+              <div class="text-sm text-gray-200">Use primary browser</div>
               <div class="text-xs text-gray-400">
-                ${defaultBrowser ? defaultBrowser.name : 'No default set — configure below'}
+                ${defaultBrowser ? defaultBrowser.name : 'No primary browser set — configure below'}
               </div>
             </div>
           </label>
@@ -719,7 +698,7 @@ function renderGeneral() {
       </section>
 
       <section class="space-y-2">
-        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Default Browser</h2>
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Primary Browser</h2>
         <div class="bg-gray-800 rounded-lg p-4 space-y-3">
           <div>
             <label class="text-xs text-gray-400 block mb-1">Browser</label>
@@ -736,9 +715,22 @@ function renderGeneral() {
               ${renderProfileOptions(c.defaultBrowser, c.defaultProfile)}
             </select>
           </div>
-          <button id="btn-save-settings" class="w-full py-2 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors font-medium">
-            Save Settings
-          </button>
+        </div>
+      </section>
+
+      <section class="space-y-2">
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Startup</h2>
+        <div class="bg-gray-800 rounded-lg p-4">
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <div class="text-sm font-medium text-gray-200">Start with Windows (tray icon)</div>
+              <div class="text-xs text-gray-400">Show Link Right in the system tray on login for quick clipboard URL access</div>
+            </div>
+            <label class="toggle flex-shrink-0">
+              <input type="checkbox" id="chk-start-with-windows" ${state.startWithWindows ? 'checked' : ''}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
         </div>
       </section>
 
@@ -760,6 +752,11 @@ function renderProfileOptions(browserName, selectedProfile) {
 function renderBrowsers() {
   return `
     <div class="flex flex-col h-full">
+      <div class="border-b border-gray-700 px-4 py-2 flex items-center gap-3 bg-gray-900">
+        <button id="btn-refresh-browsers" title="Refresh browser list"
+          class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded transition-colors text-sm">↺</button>
+        <span class="text-xs text-gray-500">Refresh</span>
+      </div>
       <div class="flex-1 overflow-y-auto">
         ${state.browsers.length === 0
           ? `<div class="flex items-center justify-center h-32 text-gray-500 text-sm">No browsers detected</div>`
@@ -771,11 +768,6 @@ function renderBrowsers() {
           class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded transition-colors text-lg font-light">+</button>
         <button id="btn-remove-browser" title="Remove selected browser"
           class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded transition-colors text-lg font-light">−</button>
-        <div class="flex-1"></div>
-        <button id="btn-refresh-browsers" title="Refresh browser list"
-          class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded transition-colors text-sm">↺</button>
-        <button id="btn-set-default-browser" title="Set as default"
-          class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded transition-colors text-sm">✓</button>
       </div>
     </div>
   `;
@@ -783,13 +775,17 @@ function renderBrowsers() {
 
 function renderBrowserRow(browser, index) {
   const isDefault = state.config.defaultBrowser === browser.name;
-  const icon = getBrowserEmoji(browser);
+  const icon = getBrowserEmoji(browser, '20px');
   return `
     <div class="browser-row flex items-center gap-3 px-4 py-2.5 border-b border-gray-800 hover:bg-gray-800 cursor-pointer transition-colors"
          data-browser-index="${index}">
-      <span class="text-lg leading-none">${icon}</span>
+      <span class="leading-none flex-shrink-0">${icon}</span>
       <span class="flex-1 text-sm text-gray-200">${esc(browser.name)}</span>
-      ${isDefault ? `<span class="text-blue-400 text-sm">✓</span>` : ''}
+      ${isDefault
+        ? `<span class="text-xs text-blue-400 font-medium px-2 py-0.5 rounded border border-blue-800 bg-blue-950">Primary</span>`
+        : `<button class="btn-set-default-browser text-xs text-gray-500 hover:text-gray-200 hover:bg-gray-700 px-2 py-0.5 rounded transition-colors"
+             data-browser-index="${index}" title="Set as primary browser">Set as primary</button>`
+      }
     </div>
   `;
 }
@@ -813,9 +809,6 @@ function renderRules() {
           class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded transition-colors text-lg font-light">+</button>
         <button id="btn-delete-rule" title="Delete selected rule"
           class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded transition-colors text-lg font-light">−</button>
-        <div class="flex-1"></div>
-        <button id="btn-edit-rule" title="Edit selected rule"
-          class="px-3 py-1 text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded transition-colors">Edit</button>
       </div>
     </div>
   `;
@@ -837,6 +830,9 @@ function renderRuleRow(rule, index) {
         </div>
         <div class="text-xs text-gray-500 truncate mt-0.5">${esc(condSummary)} → ${esc(browserName)}</div>
       </div>
+      <button class="btn-edit-rule-item flex-shrink-0 w-7 h-7 flex items-center justify-center text-gray-500 hover:text-gray-200 hover:bg-gray-700 rounded transition-colors"
+        data-rule-index="${index}" title="Edit rule"
+        style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.85rem;">&#xE70F;</button>
       <label class="toggle flex-shrink-0" title="${rule.enabled ? 'Disable' : 'Enable'} rule">
         <input type="checkbox" class="rule-toggle" data-rule-id="${esc(rule.id)}" ${rule.enabled ? 'checked' : ''}>
         <span class="toggle-slider"></span>
@@ -856,31 +852,17 @@ function getRuleConditionSummary(rule) {
   return 'No conditions';
 }
 
-// ─── Prompt Tab ───────────────────────────────────────────────────────────────
-function renderPrompt() {
+// ─── Picker Tab ───────────────────────────────────────────────────────────────
+function renderPicker() {
   const cfg = state.config;
-  const cs = cfg.chooserSettings || { iconSize: 'large', showBrowserNames: true, showURL: true };
+  const cs = cfg.pickerSettings || { showBrowserNames: true, showURL: true };
 
   return `
     <div class="p-5 space-y-5 overflow-y-auto h-full">
 
       <section class="space-y-2">
-        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Chooser Popup</h2>
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Picker Popup</h2>
         <div class="bg-gray-800 rounded-lg p-4 space-y-4">
-
-          <!-- Icon size -->
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-gray-200">Icon size</span>
-            <div class="flex items-center gap-4">
-              ${['small', 'medium', 'large'].map(size => `
-                <label class="flex items-center gap-1.5 cursor-pointer">
-                  <input type="radio" name="icon-size" value="${size}" class="accent-blue-500"
-                    ${(cs.iconSize || 'large') === size ? 'checked' : ''}>
-                  <span class="text-sm text-gray-300 capitalize">${size.charAt(0).toUpperCase() + size.slice(1)}</span>
-                </label>
-              `).join('')}
-            </div>
-          </div>
 
           <!-- Show browser names -->
           <div class="flex items-center justify-between">
@@ -905,11 +887,67 @@ function renderPrompt() {
         </div>
       </section>
 
-      <div class="flex gap-3">
-        <button id="btn-save-prompt-settings"
-          class="flex-1 py-2 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors font-medium">
-          Save Settings
-        </button>
+      <!-- Live Preview -->
+      <section class="space-y-2">
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Preview</h2>
+        <div id="picker-preview-container">
+          ${renderPickerPreview(cs.showBrowserNames !== false, cs.showURL !== false)}
+        </div>
+      </section>
+
+    </div>
+  `;
+}
+
+function renderPickerPreview(showNames, showURL) {
+  const browsers = state.browsers && state.browsers.length > 0
+    ? state.browsers.slice(0, 5)
+    : [
+        { name: 'Chrome',  path: '' },
+        { name: 'Firefox', path: '' },
+        { name: 'Edge',    path: '' },
+      ];
+
+  const exampleURL = 'https://www.wikipedia.org/wiki/Main_Page';
+
+  return `
+    <div class="rounded-xl border border-gray-700 bg-gray-900 overflow-hidden shadow-lg select-none pointer-events-none" style="max-width:320px; margin:0 auto;">
+
+      <!-- Fake title bar -->
+      <div class="flex items-center h-7 bg-gray-900 border-b border-gray-800 px-3">
+        <span class="flex-1 text-[11px] text-gray-500">Open with…</span>
+        <span class="text-gray-600 text-xs">✕</span>
+      </div>
+
+      <!-- URL row -->
+      ${showURL ? `
+      <div class="px-3 pt-2 pb-2">
+        <div class="text-[10px] text-gray-500 mb-1">Opening link</div>
+        <div class="text-[10px] text-gray-400 bg-gray-800 px-2 py-1 rounded border border-gray-700 font-mono truncate">${esc(exampleURL)}</div>
+      </div>
+      ` : `
+      <div class="px-3 pt-3 pb-2">
+        <div class="text-xs font-medium text-gray-300">Open with…</div>
+      </div>
+      `}
+
+      <!-- Browser cards -->
+      <div class="px-3 pb-3">
+        <div class="flex flex-wrap gap-2 justify-center py-1">
+          ${browsers.map((b, i) => renderPickerBrowserCard(b, i, showNames)).join('')}
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-3 pb-3 pt-1 border-t border-gray-800 space-y-2">
+        <div class="flex items-center gap-1.5">
+          <div class="w-3 h-3 rounded border border-gray-600 bg-gray-700 flex-shrink-0"></div>
+          <span class="text-[10px] text-gray-500">Always use this browser for <span class="text-gray-400">wikipedia.org</span></span>
+        </div>
+        <div class="flex gap-1.5">
+          <div class="flex-1 py-1.5 text-center text-[11px] text-gray-400 bg-gray-800 rounded border border-gray-700">Cancel</div>
+          <div class="flex-1 py-1.5 text-center text-[11px] font-semibold text-white bg-blue-600 rounded">Open</div>
+        </div>
       </div>
 
     </div>
@@ -1500,13 +1538,8 @@ function renderRuleEditorOverlay() {
 
           <!-- Action -->
           <div>
-            <label class="block text-xs font-medium text-gray-400 mb-2">When this rule is used:</label>
+            <label class="block text-xs font-medium text-gray-400 mb-2">Open in browser:</label>
             <div class="bg-gray-750 border border-gray-600 rounded-lg p-3 space-y-3" style="background:#2d3748">
-              <div>
-                <select id="rule-action" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
-                  <option value="open_browser">Open in the following browser</option>
-                </select>
-              </div>
               <div class="flex gap-2">
                 <select id="rule-browser" class="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
                   <option value="">— Select browser —</option>
@@ -1585,6 +1618,9 @@ function attachListeners() {
   document.getElementById('btn-titlebar-minimize')?.addEventListener('click', () => {
     Runtime.WindowMinimise();
   });
+  document.getElementById('btn-titlebar-maximize')?.addEventListener('click', () => {
+    Runtime.WindowToggleMaximise();
+  });
   document.getElementById('btn-titlebar-close')?.addEventListener('click', () => {
     Runtime.Quit();
   });
@@ -1598,19 +1634,6 @@ function attachListeners() {
   });
 
   // ── General tab ──
-  const btnRegister = document.getElementById('btn-register');
-  if (btnRegister) btnRegister.addEventListener('click', async () => {
-    try { await App.RegisterAsDefaultBrowser(); state.appStatus = await App.GetAppStatus(); render(); showToast('Registered successfully', 'success'); }
-    catch (e) { showToast('Registration failed: ' + e, 'error'); }
-  });
-
-  const btnUnregister = document.getElementById('btn-unregister');
-  if (btnUnregister) btnUnregister.addEventListener('click', async () => {
-    if (!confirm('Unregister Link Right as a browser?')) return;
-    try { await App.UnregisterAsDefaultBrowser(); state.appStatus = await App.GetAppStatus(); render(); showToast('Unregistered', 'success'); }
-    catch (e) { showToast('Failed: ' + e, 'error'); }
-  });
-
   const btnSetDefault = document.getElementById('btn-set-default');
   if (btnSetDefault) btnSetDefault.addEventListener('click', async () => {
     try { await App.OpenDefaultAppsSettings(); } catch (e) { showToast('Could not open settings', 'error'); }
@@ -1628,25 +1651,45 @@ function attachListeners() {
     }
   });
 
-  const btnSaveSettings = document.getElementById('btn-save-settings');
-  if (btnSaveSettings) btnSaveSettings.addEventListener('click', async () => {
-    const browser = document.getElementById('sel-default-browser').value;
+  // Auto-save general settings on any change
+  async function saveGeneralSettings() {
+    const browser = document.getElementById('sel-default-browser')?.value || '';
     const profile = document.getElementById('sel-default-profile')?.value || '';
-    const fallback = document.querySelector('input[name="fallback"]:checked')?.value || 'chooser';
+    const fallback = document.querySelector('input[name="fallback"]:checked')?.value || 'picker';
     try {
       await App.SaveSettings(browser, profile, fallback);
       state.config.defaultBrowser = browser;
       state.config.defaultProfile = profile;
       state.config.fallbackBehavior = fallback;
-      showToast('Settings saved', 'success');
     } catch (e) { showToast('Save failed: ' + e, 'error'); }
-  });
+  }
+
+  if (selDefaultBrowser) selDefaultBrowser.addEventListener('change', saveGeneralSettings);
+  document.getElementById('sel-default-profile')?.addEventListener('change', saveGeneralSettings);
+  document.querySelectorAll('input[name="fallback"]').forEach(r => r.addEventListener('change', saveGeneralSettings));
 
   // ── Browsers tab ──
   const btnRefreshBrowsers = document.getElementById('btn-refresh-browsers');
   if (btnRefreshBrowsers) btnRefreshBrowsers.addEventListener('click', async () => {
     try { state.browsers = await App.RefreshBrowsers(); render(); showToast('Browser list refreshed', 'info'); }
     catch (e) { showToast('Refresh failed', 'error'); }
+  });
+
+  document.querySelectorAll('.btn-set-default-browser').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const index = parseInt(btn.dataset.browserIndex);
+      const browser = state.browsers[index];
+      if (!browser) return;
+      try {
+        await App.SaveSettings(browser.name, state.config.defaultProfile || '', state.config.fallbackBehavior || 'picker');
+        state.config.defaultBrowser = browser.name;
+        render();
+        showToast(`${browser.name} set as primary`, 'success');
+      } catch (err) {
+        showToast('Failed to set primary browser', 'error');
+      }
+    });
   });
 
   // ── Rules tab ──
@@ -1675,23 +1718,25 @@ function attachListeners() {
     } catch (e) { showToast('Delete failed: ' + e, 'error'); }
   });
 
-  const btnEditRule = document.getElementById('btn-edit-rule');
-  if (btnEditRule) btnEditRule.addEventListener('click', () => {
-    const selected = document.querySelector('.rule-row.selected');
-    if (!selected) { showToast('Select a rule first', 'info'); return; }
-    const index = parseInt(selected.dataset.ruleIndex);
-    state.editingRule = JSON.parse(JSON.stringify(state.rules[index]));
-    render();
+  // Per-row edit buttons
+  document.querySelectorAll('.btn-edit-rule-item').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const index = parseInt(btn.dataset.ruleIndex);
+      state.editingRule = JSON.parse(JSON.stringify(state.rules[index]));
+      render();
+    });
   });
 
   // Rule row click → select / double-click → edit
   document.querySelectorAll('.rule-row').forEach(row => {
     row.addEventListener('click', (e) => {
-      if (e.target.closest('.toggle')) return;
+      if (e.target.closest('.toggle') || e.target.closest('.btn-edit-rule-item')) return;
       document.querySelectorAll('.rule-row').forEach(r => r.classList.remove('selected', 'bg-blue-900'));
       row.classList.add('selected', 'bg-blue-900');
     });
-    row.addEventListener('dblclick', () => {
+    row.addEventListener('dblclick', (e) => {
+      if (e.target.closest('.toggle') || e.target.closest('.btn-edit-rule-item')) return;
       const index = parseInt(row.dataset.ruleIndex);
       state.editingRule = JSON.parse(JSON.stringify(state.rules[index]));
       render();
@@ -1723,20 +1768,32 @@ function attachListeners() {
   // ── Rule Editor ──
   attachRuleEditorListeners();
 
-  // ── Prompt tab ──
-  const btnSavePromptSettings = document.getElementById('btn-save-prompt-settings');
-  if (btnSavePromptSettings) btnSavePromptSettings.addEventListener('click', async () => {
-    const iconSize = document.querySelector('input[name="icon-size"]:checked')?.value || 'large';
+  // ── Startup toggle ──
+  const chkStartWithWindows = document.getElementById('chk-start-with-windows');
+  if (chkStartWithWindows) chkStartWithWindows.addEventListener('change', async () => {
+    try {
+      await App.SetStartWithWindows(chkStartWithWindows.checked);
+      state.startWithWindows = chkStartWithWindows.checked;
+      showToast(chkStartWithWindows.checked ? 'Tray will start with Windows' : 'Tray startup disabled', 'success');
+    } catch (e) { showToast('Failed to update startup setting: ' + e, 'error'); }
+  });
+
+  // ── Picker tab — auto-save on toggle change ──
+  async function saveAndPreviewPickerSettings() {
+    const container = document.getElementById('picker-preview-container');
     const showBrowserNames = document.getElementById('toggle-show-names')?.checked !== false;
     const showURL = document.getElementById('toggle-show-url')?.checked !== false;
+    if (container) container.innerHTML = renderPickerPreview(showBrowserNames, showURL);
     try {
-      const settings = { iconSize, showBrowserNames, showURL };
-      await App.SaveChooserSettings(settings);
-      if (!state.config.chooserSettings) state.config.chooserSettings = {};
-      state.config.chooserSettings = settings;
-      showToast('Prompt settings saved', 'success');
+      const settings = { showBrowserNames, showURL };
+      await App.SavePickerSettings(settings);
+      if (!state.config.pickerSettings) state.config.pickerSettings = {};
+      state.config.pickerSettings = settings;
     } catch (e) { showToast('Save failed: ' + e, 'error'); }
-  });
+  }
+
+  document.getElementById('toggle-show-names')?.addEventListener('change', saveAndPreviewPickerSettings);
+  document.getElementById('toggle-show-url')?.addEventListener('change', saveAndPreviewPickerSettings);
 
 }
 
@@ -1942,20 +1999,24 @@ function esc(str) {
     .replace(/'/g, '&#39;');
 }
 
-function getBrowserEmoji(browser) {
-  // All glyphs from Segoe MDL2 Assets — must be wrapped with font-family style at render site
+function getBrowserSvgUrl(browser) {
   const name = (browser.name || '').toLowerCase();
-  const mdl2 = (code) => `<span style="font-family:'Segoe MDL2 Assets',sans-serif">${code}</span>`;
-  if (name.includes('chrome'))  return mdl2('\uE774'); // Slideshow (closest to globe/browser)
-  if (name.includes('edge'))    return mdl2('\uE774');
-  if (name.includes('firefox')) return mdl2('\uE774');
-  if (name.includes('brave'))   return mdl2('\uE774');
-  if (name.includes('safari'))  return mdl2('\uE774');
-  if (name.includes('opera'))   return mdl2('\uE774');
-  return mdl2('\uE774'); // Globe / Slideshow
+  if (name.includes('chrome'))  return svgChrome;
+  if (name.includes('edge'))    return svgEdge;
+  if (name.includes('firefox')) return svgFirefox;
+  if (name.includes('brave'))   return svgBrave;
+  if (name.includes('opera'))   return svgOpera;
+  if (name.includes('tor'))     return svgTor;
+  return svgBrowser; // Generic fallback
 }
 
-// Shorten browser name for display in chooser cards
+function getBrowserEmoji(browser, size) {
+  const url = getBrowserSvgUrl(browser);
+  const px = size || '1.5em';
+  return `<img src="${url}" alt="${esc(browser.name || 'browser')}" style="width:${px};height:${px};display:inline-block;vertical-align:middle;" draggable="false">`;
+}
+
+// Shorten browser name for display in picker cards
 function shortBrowserName(name) {
   if (!name) return '';
   // Remove common suffixes

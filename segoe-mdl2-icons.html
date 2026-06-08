@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Segoe MDL2 Assets — Icon Reference</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #111827;
+      color: #e5e7eb;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: #1f2937;
+      border-bottom: 1px solid #374151;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .header h1 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #f9fafb;
+      white-space: nowrap;
+    }
+    .header .subtitle {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .search-wrap {
+      flex: 1;
+      min-width: 200px;
+      max-width: 360px;
+    }
+    .search-wrap input {
+      width: 100%;
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-size: 13px;
+      color: #e5e7eb;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-wrap input:focus { border-color: #3b82f6; }
+    .search-wrap input::placeholder { color: #4b5563; }
+
+    .count-badge {
+      font-size: 11px;
+      color: #6b7280;
+      white-space: nowrap;
+    }
+
+    /* ── Info bar ── */
+    .info-bar {
+      margin: 16px 20px 0;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #9ca3af;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .info-bar .mdl2-icon {
+      font-family: 'Segoe MDL2 Assets', sans-serif;
+      font-size: 16px;
+      color: #6b7280;
+      flex-shrink: 0;
+    }
+
+    /* ── Grid ── */
+    .grid-container {
+      padding: 16px 20px 40px;
+    }
+    .icon-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+      gap: 6px;
+    }
+
+    /* ── Icon card ── */
+    .icon-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 10px 6px 8px;
+      border-radius: 10px;
+      background: #1f2937;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, transform 0.1s;
+      user-select: none;
+      min-height: 76px;
+    }
+    .icon-card:hover {
+      background: #374151;
+      border-color: #4b5563;
+      transform: translateY(-1px);
+    }
+    .icon-card:active {
+      transform: translateY(0);
+    }
+
+    .icon-glyph {
+      font-family: 'Segoe MDL2 Assets', sans-serif;
+      font-size: 26px;
+      line-height: 1;
+      color: #d1d5db;
+    }
+    .icon-name {
+      font-size: 9px;
+      color: #6b7280;
+      text-align: center;
+      line-height: 1.3;
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding: 0 2px;
+    }
+    .icon-code {
+      font-size: 9px;
+      color: #4b5563;
+      font-family: 'Consolas', 'Courier New', monospace;
+    }
+
+    /* ── Copied flash overlay ── */
+    .copied-flash {
+      display: none;
+      position: absolute;
+      inset: 0;
+      border-radius: 10px;
+      background: rgba(59, 130, 246, 0.92);
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.02em;
+    }
+    .copied-flash.show { display: flex; }
+
+    /* ── No results ── */
+    .no-results {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      color: #4b5563;
+      font-size: 14px;
+      gap: 8px;
+    }
+    .no-results .mdl2-icon {
+      font-family: 'Segoe MDL2 Assets', sans-serif;
+      font-size: 36px;
+    }
+    .no-results.show { display: flex; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1e3a5f;
+      border: 1px solid #3b82f6;
+      color: #93c5fd;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 10px 16px;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+      z-index: 100;
+    }
+    #toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1>Segoe MDL2 Assets</h1>
+      <div class="subtitle">Windows 10/11 built-in icon font · click any icon to copy the glyph</div>
+    </div>
+    <div class="search-wrap">
+      <input type="text" id="search" placeholder="Search by name or codepoint…" autocomplete="off" spellcheck="false" />
+    </div>
+    <div class="count-badge" id="count-badge"></div>
+  </div>
+
+  <!-- Info bar -->
+  <div class="info-bar">
+    <span class="mdl2-icon">&#xE82F;</span>
+    <span>
+      Click any icon to copy its glyph character to the clipboard.
+      Use it in HTML/JS with <code style="background:#111827;padding:1px 5px;border-radius:4px;font-size:11px;">style="font-family:'Segoe MDL2 Assets',sans-serif"</code>
+      — no external libraries needed on Windows 10/11.
+    </span>
+  </div>
+
+  <!-- Grid -->
+  <div class="grid-container">
+    <div class="icon-grid" id="icon-grid"></div>
+    <div class="no-results" id="no-results">
+      <span class="mdl2-icon">&#xE721;</span>
+      <span>No icons match your search</span>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+<script>
+  const icons = [
+    { code: '\uE700', name: 'GlobalNavButton' },
+    { code: '\uE701', name: 'Wifi' },
+    { code: '\uE702', name: 'Bluetooth' },
+    { code: '\uE703', name: 'Connect' },
+    { code: '\uE704', name: 'InternetSharing' },
+    { code: '\uE705', name: 'VPN' },
+    { code: '\uE706', name: 'Brightness' },
+    { code: '\uE707', name: 'MapPin' },
+    { code: '\uE708', name: 'QuietHours' },
+    { code: '\uE709', name: 'Airplane' },
+    { code: '\uE70A', name: 'Tablet' },
+    { code: '\uE70B', name: 'QuickNote' },
+    { code: '\uE70C', name: 'RememberedDevice' },
+    { code: '\uE70D', name: 'ChevronDown' },
+    { code: '\uE70E', name: 'ChevronUp' },
+    { code: '\uE70F', name: 'Edit' },
+    { code: '\uE710', name: 'Add' },
+    { code: '\uE711', name: 'Cancel' },
+    { code: '\uE712', name: 'More' },
+    { code: '\uE713', name: 'Settings' },
+    { code: '\uE714', name: 'Video' },
+    { code: '\uE715', name: 'Mail' },
+    { code: '\uE716', name: 'People' },
+    { code: '\uE717', name: 'Phone' },
+    { code: '\uE718', name: 'Pin' },
+    { code: '\uE719', name: 'Shop' },
+    { code: '\uE71A', name: 'Stop' },
+    { code: '\uE71B', name: 'Link' },
+    { code: '\uE71C', name: 'Filter' },
+    { code: '\uE71D', name: 'AllApps' },
+    { code: '\uE71E', name: 'Zoom' },
+    { code: '\uE71F', name: 'ZoomOut' },
+    { code: '\uE720', name: 'Microphone' },
+    { code: '\uE721', name: 'Search' },
+    { code: '\uE722', name: 'Camera' },
+    { code: '\uE723', name: 'Attach' },
+    { code: '\uE724', name: 'Send' },
+    { code: '\uE725', name: 'SendFill' },
+    { code: '\uE726', name: 'WalkSolid' },
+    { code: '\uE727', name: 'InPrivate' },
+    { code: '\uE728', name: 'FavoriteList' },
+    { code: '\uE729', name: 'PageSolid' },
+    { code: '\uE72A', name: 'Forward' },
+    { code: '\uE72B', name: 'Back' },
+    { code: '\uE72C', name: 'Refresh' },
+    { code: '\uE72D', name: 'Share' },
+    { code: '\uE72E', name: 'Lock' },
+    { code: '\uE730', name: 'ReportHacked' },
+    { code: '\uE731', name: 'EMI' },
+    { code: '\uE734', name: 'FavoriteStar' },
+    { code: '\uE735', name: 'FavoriteStarFill' },
+    { code: '\uE738', name: 'Remove' },
+    { code: '\uE739', name: 'Checkbox' },
+    { code: '\uE73A', name: 'CheckboxComposite' },
+    { code: '\uE73B', name: 'CheckboxFill' },
+    { code: '\uE73C', name: 'CheckboxIndeterminate' },
+    { code: '\uE73D', name: 'CheckboxCompositeReversed' },
+    { code: '\uE73E', name: 'CheckMark' },
+    { code: '\uE740', name: 'BackSpaceQWERTY' },
+    { code: '\uE741', name: 'SelectAll' },
+    { code: '\uE742', name: 'Orientation' },
+    { code: '\uE743', name: 'Import' },
+    { code: '\uE74A', name: 'TouchPointer' },
+    { code: '\uE74B', name: 'Merge' },
+    { code: '\uE74C', name: 'NewWindow' },
+    { code: '\uE74D', name: 'Mail2' },
+    { code: '\uE74E', name: 'MailFilled' },
+    { code: '\uE74F', name: 'BlockContact' },
+    { code: '\uE750', name: 'AddFriend' },
+    { code: '\uE751', name: 'TouchPointer2' },
+    { code: '\uE752', name: 'GoToStart' },
+    { code: '\uE753', name: 'ZeroBars' },
+    { code: '\uE754', name: 'OneBar' },
+    { code: '\uE755', name: 'TwoBars' },
+    { code: '\uE756', name: 'ThreeBars' },
+    { code: '\uE757', name: 'FourBars' },
+    { code: '\uE758', name: 'World' },
+    { code: '\uE759', name: 'Comment' },
+    { code: '\uE75A', name: 'MusicInfo' },
+    { code: '\uE75B', name: 'ChevronLeft' },
+    { code: '\uE75C', name: 'ChevronRight' },
+    { code: '\uE75D', name: 'InkingTool' },
+    { code: '\uE75E', name: 'Emoji2' },
+    { code: '\uE75F', name: 'GripperBarHorizontal' },
+    { code: '\uE760', name: 'System' },
+    { code: '\uE761', name: 'Personalize' },
+    { code: '\uE762', name: 'Devices' },
+    { code: '\uE763', name: 'SearchAndApps' },
+    { code: '\uE764', name: 'Globe' },
+    { code: '\uE765', name: 'TimeLanguage' },
+    { code: '\uE766', name: 'EaseOfAccess' },
+    { code: '\uE767', name: 'UpdateRestore' },
+    { code: '\uE768', name: 'HangUp' },
+    { code: '\uE769', name: 'ContactInfo' },
+    { code: '\uE76A', name: 'Unpin' },
+    { code: '\uE76B', name: 'Contact' },
+    { code: '\uE76C', name: 'Memo' },
+    { code: '\uE76D', name: 'IncomingCall' },
+    { code: '\uE76E', name: 'Paste' },
+    { code: '\uE76F', name: 'PhoneBook' },
+    { code: '\uE770', name: 'LEDLight' },
+    { code: '\uE771', name: 'Error' },
+    { code: '\uE772', name: 'GripperBarVertical' },
+    { code: '\uE773', name: 'Unlock' },
+    { code: '\uE774', name: 'Slideshow' },
+    { code: '\uE775', name: 'Calendar' },
+    { code: '\uE776', name: 'GripperResize' },
+    { code: '\uE777', name: 'Megaphone' },
+    { code: '\uE778', name: 'Trim' },
+    { code: '\uE779', name: 'NewWindow2' },
+    { code: '\uE77A', name: 'SaveLocal' },
+    { code: '\uE77B', name: 'Color' },
+    { code: '\uE77C', name: 'DataSense' },
+    { code: '\uE77D', name: 'SaveAs' },
+    { code: '\uE77E', name: 'Light' },
+    { code: '\uE77F', name: 'Effects' },
+    { code: '\uE780', name: 'Bus' },
+    { code: '\uE781', name: 'Cloudy' },
+    { code: '\uE782', name: 'PartlyCloudyDay' },
+    { code: '\uE783', name: 'PartlyCloudyNight' },
+    { code: '\uE784', name: 'ClearNight' },
+    { code: '\uE785', name: 'StrongWind' },
+    { code: '\uE786', name: 'Squalls' },
+    { code: '\uE787', name: 'Freezing' },
+    { code: '\uE788', name: 'Hail' },
+    { code: '\uE789', name: 'SleetShowers' },
+    { code: '\uE78A', name: 'Sleet' },
+    { code: '\uE78B', name: 'SnowShowers' },
+    { code: '\uE78C', name: 'Snow' },
+    { code: '\uE78D', name: 'BlowingSnow' },
+    { code: '\uE78E', name: 'Frigid' },
+    { code: '\uE78F', name: 'Fog' },
+    { code: '\uE790', name: 'Haze' },
+    { code: '\uE791', name: 'RainShowers' },
+    { code: '\uE792', name: 'Rain' },
+    { code: '\uE793', name: 'Thunderstorms' },
+    { code: '\uE794', name: 'TStormShowers' },
+    { code: '\uE795', name: 'TStormSnoShowers' },
+    { code: '\uE796', name: 'ChanceOfRain' },
+    { code: '\uE797', name: 'ChanceOfSnow' },
+    { code: '\uE798', name: 'ChanceOfStorms' },
+    { code: '\uE799', name: 'Hot' },
+    { code: '\uE79A', name: 'Blizzard' },
+    { code: '\uE79B', name: 'Snowy' },
+    { code: '\uE79C', name: 'BatterySaver9' },
+    { code: '\uE79D', name: 'BatterySaver10' },
+    { code: '\uE79E', name: 'BatterySaverFull' },
+    { code: '\uE7A5', name: 'Battery0' },
+    { code: '\uE7A6', name: 'Battery1' },
+    { code: '\uE7A7', name: 'Battery2' },
+    { code: '\uE7A8', name: 'Battery3' },
+    { code: '\uE7A9', name: 'Battery4' },
+    { code: '\uE7AA', name: 'Battery5' },
+    { code: '\uE7AB', name: 'Battery6' },
+    { code: '\uE7AC', name: 'Battery7' },
+    { code: '\uE7AD', name: 'Battery8' },
+    { code: '\uE7AE', name: 'Battery9' },
+    { code: '\uE7AF', name: 'Battery10' },
+    { code: '\uE7B0', name: 'BatteryCharging0' },
+    { code: '\uE7B1', name: 'BatteryCharging1' },
+    { code: '\uE7B2', name: 'BatteryCharging2' },
+    { code: '\uE7B3', name: 'BatteryCharging3' },
+    { code: '\uE7B4', name: 'BatteryCharging4' },
+    { code: '\uE7B5', name: 'BatteryCharging5' },
+    { code: '\uE7B6', name: 'BatteryCharging6' },
+    { code: '\uE7B7', name: 'BatteryCharging7' },
+    { code: '\uE7B8', name: 'BatteryCharging8' },
+    { code: '\uE7B9', name: 'BatteryCharging9' },
+    { code: '\uE7BA', name: 'BatteryCharging10' },
+    { code: '\uE7BC', name: 'BatteryUnknown' },
+    { code: '\uE7BE', name: 'WifiAttentionOverlay' },
+    { code: '\uE7BF', name: 'Robots' },
+    { code: '\uE7C0', name: 'Bus2' },
+    { code: '\uE7C1', name: 'Car' },
+    { code: '\uE7C2', name: 'Ferry' },
+    { code: '\uE7C3', name: 'Walk' },
+    { code: '\uE7C4', name: 'Cycling' },
+    { code: '\uE7C5', name: 'TransitConnection' },
+    { code: '\uE7C6', name: 'TransitConnectionDash' },
+    { code: '\uE7C7', name: 'TransitConnectionTransfer' },
+    { code: '\uE7C8', name: 'StatusCircleLeft' },
+    { code: '\uE7C9', name: 'StatusTriangleLeft' },
+    { code: '\uE7CA', name: 'StatusCircleRight' },
+    { code: '\uE7CB', name: 'StatusTriangleRight' },
+    { code: '\uE7CC', name: 'StatusCircleInner' },
+    { code: '\uE7CD', name: 'StatusTriangleInner' },
+    { code: '\uE7CE', name: 'StatusCircleRing' },
+    { code: '\uE7CF', name: 'StatusTriangleOuter' },
+    { code: '\uE7D0', name: 'StatusCircleCheckmark' },
+    { code: '\uE7D1', name: 'StatusCircleInfo' },
+    { code: '\uE7D2', name: 'StatusCircleBlock' },
+    { code: '\uE7D3', name: 'StatusCircleBlock2' },
+    { code: '\uE7D4', name: 'StatusCircleQuestionMark' },
+    { code: '\uE7D5', name: 'StatusCircleSync' },
+    { code: '\uE7D6', name: 'Dial1' },
+    { code: '\uE7D7', name: 'Dial2' },
+    { code: '\uE7D8', name: 'Dial3' },
+    { code: '\uE7D9', name: 'Dial4' },
+    { code: '\uE7DA', name: 'Dial5' },
+    { code: '\uE7DB', name: 'Dial6' },
+    { code: '\uE7DC', name: 'Dial7' },
+    { code: '\uE7DD', name: 'Dial8' },
+    { code: '\uE7DE', name: 'DialShape1' },
+    { code: '\uE7DF', name: 'DialShape2' },
+    { code: '\uE7E0', name: 'DialShape3' },
+    { code: '\uE7E1', name: 'DialShape4' },
+    { code: '\uE7E3', name: 'TollSolid' },
+    { code: '\uE7E4', name: 'TrafficCongestionSolid' },
+    { code: '\uE7E6', name: 'ExploreContentSingle' },
+    { code: '\uE7E7', name: 'CollapseContent' },
+    { code: '\uE7E8', name: 'CollapseContentSingle' },
+    { code: '\uE7E9', name: 'InfoSolid' },
+    { code: '\uE7EA', name: 'GroupList' },
+    { code: '\uE7EB', name: 'CaretBottomRightSolidCenter8' },
+    { code: '\uE7EC', name: 'ProgressRingDots' },
+    { code: '\uE7ED', name: 'Checkbox2' },
+    { code: '\uE7EE', name: 'CheckboxComposite2' },
+    { code: '\uE7EF', name: 'CheckboxIndeterminate2' },
+    { code: '\uE7F0', name: 'CheckboxCompositeReversed2' },
+    { code: '\uE7F1', name: 'CheckMark2' },
+    { code: '\uE7F2', name: 'BackSpaceQWERTYSm' },
+    { code: '\uE7F3', name: 'BackSpaceQWERTYMd' },
+    { code: '\uE7F4', name: 'Swipe' },
+    { code: '\uE7F5', name: 'Fingerprint' },
+    { code: '\uE7F6', name: 'Handwriting' },
+    { code: '\uE7F7', name: 'ChromeBack' },
+    { code: '\uE7F8', name: 'ChromeForward' },
+    { code: '\uE7F9', name: 'ChromeRefresh' },
+    { code: '\uE7FA', name: 'ChromeShare' },
+    { code: '\uE7FB', name: 'ChromeBookmarks' },
+    { code: '\uE7FC', name: 'ChromeBookmarksFill' },
+    { code: '\uE7FD', name: 'ChromeTabsSearch' },
+    { code: '\uE7FE', name: 'ChromeHome' },
+    { code: '\uE7FF', name: 'ChromeAnnotate' },
+    { code: '\uE800', name: 'ChromeAnnotateFill' },
+    { code: '\uE801', name: 'ChromeClose' },
+    { code: '\uE802', name: 'ChromeMinimize' },
+    { code: '\uE803', name: 'ChromeMaximize' },
+    { code: '\uE804', name: 'ChromeRestore' },
+    { code: '\uE805', name: 'Paste2' },
+    { code: '\uE806', name: 'Cut' },
+    { code: '\uE807', name: 'Copy' },
+    { code: '\uE808', name: 'Important' },
+    { code: '\uE809', name: 'MailReply' },
+    { code: '\uE80A', name: 'Sort' },
+    { code: '\uE80B', name: 'MobileTablet' },
+    { code: '\uE80C', name: 'DisconnectDrive' },
+    { code: '\uE80D', name: 'MapDrive' },
+    { code: '\uE80E', name: 'OpenFile' },
+    { code: '\uE80F', name: 'ClearSelection' },
+    { code: '\uE810', name: 'FontDecrease' },
+    { code: '\uE811', name: 'FontIncrease' },
+    { code: '\uE812', name: 'FontSize' },
+    { code: '\uE813', name: 'CellPhone' },
+    { code: '\uE814', name: 'ReShare' },
+    { code: '\uE815', name: 'Tag' },
+    { code: '\uE816', name: 'RepeatOne' },
+    { code: '\uE817', name: 'RepeatAll' },
+    { code: '\uE818', name: 'OutlineStar' },
+    { code: '\uE819', name: 'SolidStar' },
+    { code: '\uE81A', name: 'Calculator' },
+    { code: '\uE81B', name: 'Directions' },
+    { code: '\uE81C', name: 'Target' },
+    { code: '\uE81D', name: 'Library' },
+    { code: '\uE81E', name: 'PhoneBook2' },
+    { code: '\uE81F', name: 'Memo2' },
+    { code: '\uE820', name: 'Microphone2' },
+    { code: '\uE821', name: 'PostUpdate' },
+    { code: '\uE822', name: 'BackToWindow' },
+    { code: '\uE823', name: 'FullScreen' },
+    { code: '\uE824', name: 'NewFolder' },
+    { code: '\uE825', name: 'CalendarReply' },
+    { code: '\uE826', name: 'UnsyncFolder' },
+    { code: '\uE827', name: 'SyncFolder' },
+    { code: '\uE828', name: 'BlockContact2' },
+    { code: '\uE829', name: 'SwitchApps' },
+    { code: '\uE82A', name: 'AddFriend2' },
+    { code: '\uE82B', name: 'TouchPointer3' },
+    { code: '\uE82C', name: 'GoToStart2' },
+    { code: '\uE82D', name: 'ZeroBars2' },
+    { code: '\uE82E', name: 'StopSlideshow' },
+    { code: '\uE82F', name: 'Permissions' },
+    { code: '\uE830', name: 'Highlight' },
+    { code: '\uE831', name: 'DisableUpdates' },
+    { code: '\uE832', name: 'UnfavoriteStarFill' },
+    { code: '\uE833', name: 'Italic' },
+    { code: '\uE834', name: 'Underline' },
+    { code: '\uE835', name: 'Bold' },
+    { code: '\uE836', name: 'MoveToFolder' },
+    { code: '\uE837', name: 'LikeDislike' },
+    { code: '\uE838', name: 'Dislike' },
+    { code: '\uE839', name: 'Like' },
+    { code: '\uE83A', name: 'AlignRight' },
+    { code: '\uE83B', name: 'AlignCenter' },
+    { code: '\uE83C', name: 'AlignLeft' },
+    { code: '\uE83D', name: 'Zoom2' },
+    { code: '\uE83E', name: 'ZoomOut2' },
+    { code: '\uE83F', name: 'OpenWith' },
+    { code: '\uE840', name: 'Rotate' },
+    { code: '\uE841', name: 'Shuffle' },
+    { code: '\uE842', name: 'Movies' },
+    { code: '\uE843', name: 'SelectAll2' },
+    { code: '\uE844', name: 'Orientation2' },
+    { code: '\uE845', name: 'Import2' },
+    { code: '\uE846', name: 'Folder' },
+    { code: '\uE847', name: 'Picture' },
+    { code: '\uE848', name: 'Caption' },
+    { code: '\uE849', name: 'ChromeBackMirrored' },
+    { code: '\uE84A', name: 'ChromeForwardMirrored' },
+    { code: '\uE84B', name: 'ChromeBackMirrored2' },
+    { code: '\uE84C', name: 'ChromeForwardMirrored2' },
+    { code: '\uE84D', name: 'Trim2' },
+    { code: '\uE84E', name: 'AttachCamera' },
+    { code: '\uE84F', name: 'ZoomIn' },
+    { code: '\uE850', name: 'Bookmarks' },
+    { code: '\uE851', name: 'Document' },
+    { code: '\uE852', name: 'ProtectedDocument' },
+    { code: '\uE853', name: 'OpenInNewWindow' },
+    { code: '\uE854', name: 'MailFill' },
+    { code: '\uE855', name: 'ViewAll' },
+    { code: '\uE856', name: 'VideoChat' },
+    { code: '\uE857', name: 'Switch' },
+    { code: '\uE858', name: 'Rename' },
+    { code: '\uE859', name: 'Go' },
+    { code: '\uE85A', name: 'SurfaceHub' },
+    { code: '\uE85B', name: 'Remote' },
+    { code: '\uE85C', name: 'Click' },
+    { code: '\uE85D', name: 'Shuffle2' },
+    { code: '\uE85E', name: 'Movies2' },
+    { code: '\uE85F', name: 'SelectAll3' },
+    { code: '\uE860', name: 'Orientation3' },
+    { code: '\uE861', name: 'Import3' },
+    { code: '\uE862', name: 'Folder2' },
+    { code: '\uE863', name: 'Picture2' },
+    { code: '\uE864', name: 'Caption2' },
+    { code: '\uE865', name: 'Trim3' },
+    { code: '\uE866', name: 'AttachCamera2' },
+    { code: '\uE867', name: 'ZoomIn2' },
+    { code: '\uE868', name: 'Bookmarks2' },
+    { code: '\uE869', name: 'Document2' },
+    { code: '\uE86A', name: 'ProtectedDocument2' },
+    { code: '\uE86B', name: 'Page' },
+    { code: '\uE86C', name: 'Bullets' },
+    { code: '\uE86D', name: 'Comment2' },
+    { code: '\uE86E', name: 'MailReply2' },
+    { code: '\uE86F', name: 'Undo' },
+    { code: '\uE870', name: 'Redo' },
+    { code: '\uE871', name: 'BookmarksMirrored' },
+    { code: '\uE872', name: 'Bullseye' },
+    { code: '\uE873', name: 'NUIFace' },
+    { code: '\uE874', name: 'CalendarMirrored' },
+    { code: '\uE875', name: 'ChevronUpSmall' },
+    { code: '\uE876', name: 'ChevronDownSmall' },
+    { code: '\uE877', name: 'ChevronLeftSmall' },
+    { code: '\uE878', name: 'ChevronRightSmall' },
+    { code: '\uE879', name: 'ChevronUpMed' },
+    { code: '\uE87A', name: 'ChevronDownMed' },
+    { code: '\uE87B', name: 'ChevronLeftMed' },
+    { code: '\uE87C', name: 'ChevronRightMed' },
+    { code: '\uE87D', name: 'Devices2' },
+    { code: '\uE87E', name: 'PC1' },
+    { code: '\uE87F', name: 'PresenceChicklet' },
+    { code: '\uE880', name: 'PresenceChickletVideo' },
+    { code: '\uE881', name: 'Reply' },
+    { code: '\uE882', name: 'HalfStarLeft' },
+    { code: '\uE883', name: 'HalfStarRight' },
+    { code: '\uE884', name: 'CommandPrompt' },
+    { code: '\uE885', name: 'Presentation' },
+    { code: '\uE886', name: 'MultiSelect' },
+    { code: '\uE887', name: 'KeyboardClassic' },
+    { code: '\uE888', name: 'Play' },
+    { code: '\uE889', name: 'Pause' },
+    { code: '\uE88A', name: 'ChevronLeft2' },
+    { code: '\uE88B', name: 'ChevronRight2' },
+    { code: '\uE88C', name: 'InkingToolFill' },
+    { code: '\uE88D', name: 'XBOX' },
+    { code: '\uE88E', name: 'Trackers' },
+    { code: '\uE88F', name: 'Nav2DMapView' },
+    { code: '\uE890', name: 'StreetsideSplitMinimize' },
+    { code: '\uE891', name: 'StreetsideSplitExpand' },
+    { code: '\uE892', name: 'Car2' },
+    { code: '\uE893', name: 'Walk2' },
+    { code: '\uE894', name: 'Bus3' },
+    { code: '\uE895', name: 'TiltUp' },
+    { code: '\uE896', name: 'TiltDown' },
+    { code: '\uE897', name: 'CallForwarding' },
+    { code: '\uE898', name: 'RotateCamera' },
+    { code: '\uE899', name: 'Home' },
+    { code: '\uE89A', name: 'ParkingLocation' },
+    { code: '\uE89B', name: 'MapCompassTop' },
+    { code: '\uE89C', name: 'MapCompassBottom' },
+    { code: '\uE89D', name: 'IncidentTriangle' },
+    { code: '\uE89E', name: 'Touch' },
+    { code: '\uE89F', name: 'MapDirections' },
+    { code: '\uE8A0', name: 'StartPoint' },
+    { code: '\uE8A1', name: 'StopPoint' },
+    { code: '\uE8A2', name: 'EndPoint' },
+    { code: '\uE8A3', name: 'History' },
+    { code: '\uE8A4', name: 'Location' },
+    { code: '\uE8A5', name: 'MapLayers' },
+    { code: '\uE8A6', name: 'Accident' },
+    { code: '\uE8A7', name: 'Work' },
+    { code: '\uE8A8', name: 'Construction' },
+    { code: '\uE8A9', name: 'Recent' },
+    { code: '\uE8AA', name: 'Bank' },
+    { code: '\uE8AB', name: 'DownloadMap' },
+    { code: '\uE8AC', name: 'InkingToolFill2' },
+    { code: '\uE8AD', name: 'HighlightFill' },
+    { code: '\uE8AE', name: 'EraseToolFill' },
+    { code: '\uE8AF', name: 'EraseToolFill2' },
+    { code: '\uE8B0', name: 'Dictionary' },
+    { code: '\uE8B1', name: 'DictionaryAdd' },
+    { code: '\uE8B2', name: 'ToolTip' },
+    { code: '\uE8B3', name: 'ChromeBack2' },
+    { code: '\uE8B4', name: 'ProvisioningPackage' },
+    { code: '\uE8B5', name: 'AddRemoteDevice' },
+    { code: '\uE8B6', name: 'FolderOpen' },
+    { code: '\uE8B7', name: 'Ethernet' },
+    { code: '\uE8B8', name: 'ShareBroadband' },
+    { code: '\uE8B9', name: 'DirectAccess' },
+    { code: '\uE8BA', name: 'DialUp' },
+    { code: '\uE8BB', name: 'DefenderApp' },
+    { code: '\uE8BC', name: 'BatteryCharging11' },
+    { code: '\uE8BD', name: 'Battery11' },
+    { code: '\uE8BE', name: 'Trackers2' },
+    { code: '\uE8BF', name: 'AddSurfaceHub' },
+    { code: '\uE8C0', name: 'DevUpdate' },
+    { code: '\uE8C1', name: 'Unit' },
+    { code: '\uE8C2', name: 'AddTo' },
+    { code: '\uE8C3', name: 'RemoveFrom' },
+    { code: '\uE8C4', name: 'RadioBtnOff' },
+    { code: '\uE8C5', name: 'RadioBtnOn' },
+    { code: '\uE8C6', name: 'RadioBullet' },
+    { code: '\uE8C7', name: 'ExploreContent' },
+    { code: '\uE8C8', name: 'ScrollMode' },
+    { code: '\uE8C9', name: 'ZoomMode' },
+    { code: '\uE8CA', name: 'PanMode' },
+    { code: '\uE8CB', name: 'WiredUSB' },
+    { code: '\uE8CC', name: 'WirelessUSB' },
+    { code: '\uE8CD', name: 'USBSafeConnect' },
+    { code: '\uE8CE', name: 'ActionCenterNotification' },
+    { code: '\uE8CF', name: 'ResetDevice' },
+    { code: '\uE8D0', name: 'Feedback' },
+    { code: '\uE8D1', name: 'Subtitles' },
+    { code: '\uE8D2', name: 'SubtitlesAudio' },
+    { code: '\uE8D3', name: 'OpenFolderHorizontal' },
+    { code: '\uE8D4', name: 'CalendarDay' },
+    { code: '\uE8D5', name: 'CalendarWeek' },
+    { code: '\uE8D6', name: 'Characters' },
+    { code: '\uE8D7', name: 'MailReplyAll' },
+    { code: '\uE8D8', name: 'Read' },
+    { code: '\uE8D9', name: 'ShowBcc' },
+    { code: '\uE8DA', name: 'HideBcc' },
+    { code: '\uE8DB', name: 'Cut2' },
+    { code: '\uE8DC', name: 'PaymentCard' },
+    { code: '\uE8DD', name: 'Copy2' },
+    { code: '\uE8DE', name: 'Important2' },
+    { code: '\uE8DF', name: 'MailReply3' },
+    { code: '\uE8E0', name: 'Sort2' },
+    { code: '\uE8E1', name: 'MobileTablet2' },
+    { code: '\uE8E2', name: 'DisconnectDrive2' },
+    { code: '\uE8E3', name: 'MapDrive2' },
+    { code: '\uE8E4', name: 'OpenFile2' },
+    { code: '\uE8E5', name: 'ClearSelection2' },
+    { code: '\uE8E6', name: 'FontDecrease2' },
+    { code: '\uE8E7', name: 'FontIncrease2' },
+    { code: '\uE8E8', name: 'FontSize2' },
+    { code: '\uE8E9', name: 'CellPhone2' },
+    { code: '\uE8EA', name: 'ReShare2' },
+    { code: '\uE8EB', name: 'Tag2' },
+    { code: '\uE8EC', name: 'RepeatOne2' },
+    { code: '\uE8ED', name: 'RepeatAll2' },
+    { code: '\uE8EE', name: 'Calculator2' },
+    { code: '\uE8EF', name: 'Directions2' },
+    { code: '\uE8F0', name: 'Library2' },
+    { code: '\uE8F1', name: 'ChatBubbles' },
+    { code: '\uE8F2', name: 'PostUpdate2' },
+    { code: '\uE8F3', name: 'NewWindow3' },
+    { code: '\uE8F4', name: 'SaveLocal2' },
+    { code: '\uE8F5', name: 'Color2' },
+    { code: '\uE8F6', name: 'DataSense2' },
+    { code: '\uE8F7', name: 'SaveAs2' },
+    { code: '\uE8F8', name: 'Light2' },
+    { code: '\uE8F9', name: 'Effects2' },
+    { code: '\uE8FA', name: 'Microphone3' },
+    { code: '\uE8FB', name: 'Feedback2' },
+    { code: '\uE8FC', name: 'Subtitles2' },
+    { code: '\uE8FD', name: 'SubtitlesAudio2' },
+    { code: '\uE8FE', name: 'OpenFolderHorizontal2' },
+    { code: '\uE8FF', name: 'CalendarDay2' },
+    { code: '\uE90F', name: 'Admin' },
+  ];
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+  function codePoint(ch) {
+    return 'U+' + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
+  }
+
+  let toastTimer = null;
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
+  }
+
+  function copyIcon(card, glyph, name) {
+    navigator.clipboard.writeText(glyph).then(() => {
+      const flash = card.querySelector('.copied-flash');
+      flash.classList.add('show');
+      setTimeout(() => flash.classList.remove('show'), 900);
+      showToast(`Copied "${name}" glyph`);
+    }).catch(() => {
+      showToast('Copy failed — try a different browser');
+    });
+  }
+
+  // ── Build cards ──────────────────────────────────────────────────────────────
+  const grid = document.getElementById('icon-grid');
+  const countBadge = document.getElementById('count-badge');
+
+  function buildCard(icon) {
+    const cp = codePoint(icon.code);
+    const card = document.createElement('div');
+    card.className = 'icon-card';
+    card.title = `${icon.name}\n${cp}\nClick to copy glyph`;
+    card.dataset.name = icon.name.toLowerCase();
+    card.dataset.cp = cp.toLowerCase();
+    card.innerHTML = `
+      <span class="icon-glyph">${icon.code}</span>
+      <span class="icon-name">${icon.name}</span>
+      <span class="icon-code">${cp}</span>
+      <span class="copied-flash">Copied!</span>
+    `;
+    card.addEventListener('click', () => copyIcon(card, icon.code, icon.name));
+    return card;
+  }
+
+  const allCards = icons.map(buildCard);
+  allCards.forEach(c => grid.appendChild(c));
+  countBadge.textContent = `${icons.length} icons`;
+
+  // ── Search ───────────────────────────────────────────────────────────────────
+  const searchInput = document.getElementById('search');
+  const noResults   = document.getElementById('no-results');
+
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.trim().toLowerCase();
+    let visible = 0;
+    allCards.forEach(card => {
+      const match = !q || card.dataset.name.includes(q) || card.dataset.cp.includes(q);
+      card.style.display = match ? '' : 'none';
+      if (match) visible++;
+    });
+    countBadge.textContent = q ? `${visible} of ${icons.length} icons` : `${icons.length} icons`;
+    noResults.classList.toggle('show', visible === 0);
+  });
+
+  // Focus search on load
+  searchInput.focus();
+</script>
+</body>
+</html>

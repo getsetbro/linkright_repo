@@ -30,7 +30,7 @@ func (a *App) startup(ctx context.Context) {
 	a.config = LoadConfig()
 	a.browsers = DetectBrowsers()
 
-	// First-run: auto-register as a browser (skip in dev mode and tray/chooser modes)
+	// First-run: auto-register as a browser (skip in dev mode and tray/picker modes)
 	if !a.devMode && !a.IsTrayMode() && a.GetCurrentURL() == "" {
 		if a.config.FirstRun || !IsRegistered() {
 			_ = RegisterApp()
@@ -124,27 +124,27 @@ func (a *App) SaveSettings(defaultBrowser, defaultProfile, fallbackBehavior stri
 	return SaveConfig(a.config)
 }
 
-// GetChooserSettings returns the current chooser popup settings
-func (a *App) GetChooserSettings() ChooserSettings {
+// GetPickerSettings returns the current picker popup settings
+func (a *App) GetPickerSettings() PickerSettings {
 	a.config = LoadConfig()
-	return a.config.ChooserSettings
+	return a.config.PickerSettings
 }
 
-// SaveChooserSettings saves the chooser popup appearance settings
-func (a *App) SaveChooserSettings(settings ChooserSettings) error {
-	a.config.ChooserSettings = settings
+// SavePickerSettings saves the picker popup appearance settings
+func (a *App) SavePickerSettings(settings PickerSettings) error {
+	a.config.PickerSettings = settings
 	return SaveConfig(a.config)
 }
 
 // ---- First-Run Methods ----
 
 // IsFirstRun returns true if this is the first time the app has been launched
-// (i.e. the user has not yet been prompted to set Link Right as the default browser).
+// (i.e. the user has not yet been asked to set Link Right as the default browser).
 func (a *App) IsFirstRun() bool {
 	return !IsDefaultBrowser()
 }
 
-// MarkFirstRunComplete marks the first-run flow as done so the prompt is not shown again.
+// MarkFirstRunComplete marks the first-run flow as done so the picker is not shown again.
 func (a *App) MarkFirstRunComplete() error {
 	a.config.FirstRun = false
 	return SaveConfig(a.config)
@@ -195,15 +195,15 @@ func (a *App) GetCurrentURL() string {
 	return ""
 }
 
-// IsChooserMode returns true when the app was launched with a URL argument
-// and no matching rule was found (chooser popup should be shown).
-func (a *App) IsChooserMode() bool {
+// IsPickerMode returns true when the app was launched with a URL argument
+// and no matching rule was found (picker popup should be shown).
+func (a *App) IsPickerMode() bool {
 	return a.GetCurrentURL() != ""
 }
 
 // ProcessURL evaluates rules for the given URL and returns the result:
 // "launched"  — a rule matched and the handler/browser was opened successfully
-// "chooser"   — no rule matched, or launch failed; show the chooser popup
+// "picker"    — no rule matched, or launch failed; show the picker popup
 func (a *App) ProcessURL(rawURL string) string {
 	rule := FindMatchingRule(rawURL, a.config.Rules)
 
@@ -212,8 +212,8 @@ func (a *App) ProcessURL(rawURL string) string {
 		if err := LaunchProtocolURL(rawURL); err == nil {
 			return "launched"
 		}
-		// Launch failed — fall through to chooser
-		return "chooser"
+		// Launch failed — fall through to picker
+		return "picker"
 	}
 
 	// Non-protocol rule matched → launch the browser directly
@@ -223,8 +223,8 @@ func (a *App) ProcessURL(rawURL string) string {
 				return "launched"
 			}
 		}
-		// Launch failed — fall through to chooser
-		return "chooser"
+		// Launch failed — fall through to picker
+		return "picker"
 	}
 
 	// No rule matched — check fallback behavior
@@ -248,14 +248,14 @@ func (a *App) ProcessURL(rawURL string) string {
 		}
 	}
 
-	return "chooser"
+	return "picker"
 }
 
-// GetChooserData returns the data needed to display the chooser popup.
+// GetPickerData returns the data needed to display the picker popup.
 // For protocol URLs with no registered handler, a warning is included.
-func (a *App) GetChooserData() ChooserRequest {
+func (a *App) GetPickerData() PickerRequest {
 	rawURL := a.GetCurrentURL()
-	req := ChooserRequest{
+	req := PickerRequest{
 		URL:      rawURL,
 		Domain:   ExtractDomain(rawURL),
 		Reason:   "no_rule",
@@ -278,8 +278,7 @@ func (a *App) GetChooserData() ChooserRequest {
 }
 
 // OpenWithBrowser opens the current URL with the selected browser/profile.
-// Full implementation in Phase 6.
-func (a *App) OpenWithBrowser(resp ChooserResponse) error {
+func (a *App) OpenWithBrowser(resp PickerResponse) error {
 	url := a.GetCurrentURL()
 	if url == "" {
 		return nil
@@ -301,6 +300,8 @@ func (a *App) OpenWithBrowser(resp ChooserResponse) error {
 				Name:        domain,
 				Pattern:     domain,
 				MatchType:   "domain",
+				Conditions:  []Condition{{Field: "host", Operator: "contains", Value: domain}},
+				ConditionLogic: "all",
 				Browser:     resp.BrowserName,
 				BrowserPath: resp.BrowserPath,
 				Profile:     resp.Profile,
@@ -313,8 +314,8 @@ func (a *App) OpenWithBrowser(resp ChooserResponse) error {
 	return LaunchBrowser(resp.BrowserPath, resp.Profile, url)
 }
 
-// CancelChooser closes the chooser popup without opening a browser.
-func (a *App) CancelChooser() {
+// CancelPicker closes the picker popup without opening a browser.
+func (a *App) CancelPicker() {
 	runtime.Quit(a.ctx)
 }
 
@@ -330,6 +331,27 @@ func (a *App) LookupProtocol(scheme string) *ProtocolApp {
 // so the frontend can show availability warnings.
 func (a *App) GetProtocolApps() []ProtocolApp {
 	return GetProtocolAppsForRules(a.config.Rules)
+}
+
+// ---- Startup / Tray Settings ----
+
+// GetStartWithWindows returns whether the tray startup shortcut is enabled.
+// It reflects the live state of the shortcut file, not just the config value.
+func (a *App) GetStartWithWindows() bool {
+	return IsStartupEnabled()
+}
+
+// SetStartWithWindows creates or removes the Windows Startup shortcut for the
+// tray and persists the preference to config.
+func (a *App) SetStartWithWindows(enabled bool) error {
+	a.config.StartWithWindows = enabled
+	if err := SaveConfig(a.config); err != nil {
+		return err
+	}
+	if enabled {
+		return EnableStartup()
+	}
+	return DisableStartup()
 }
 
 // ---- Tray Popup Methods (Phase 9a) ----
@@ -370,7 +392,7 @@ func (a *App) GetTrayData() TrayData {
 
 // OpenURLFromClipboard reads the clipboard URL and runs it through the full
 // rule-matching + launch pipeline (same as if the URL had been passed on the
-// command line).  Returns "launched" or "chooser".
+// command line).  Returns "launched" or "picker".
 func (a *App) OpenURLFromClipboard() string {
 	url := a.GetClipboardURL()
 	if url == "" {

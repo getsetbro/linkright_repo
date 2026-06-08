@@ -2,9 +2,10 @@ package main
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
+	"unsafe"
 
 	"golang.org/x/sys/windows/registry"
 )
@@ -156,9 +157,30 @@ func IsDefaultBrowser() bool {
 	return true
 }
 
+// shellExecute is a lazily-loaded reference to Shell32's ShellExecuteW.
+var (
+	modShell32       = syscall.NewLazyDLL("shell32.dll")
+	procShellExecute = modShell32.NewProc("ShellExecuteW")
+)
+
 // OpenDefaultAppsSettings opens the Windows Default Apps settings page
+// using ShellExecuteW so no console window is ever created.
 func OpenDefaultAppsSettings() error {
-	return exec.Command("cmd", "/c", "start", "ms-settings:defaultapps").Run()
+	verb, _ := syscall.UTF16PtrFromString("open")
+	uri, _ := syscall.UTF16PtrFromString("ms-settings:defaultapps")
+	ret, _, _ := procShellExecute.Call(
+		0,
+		uintptr(unsafe.Pointer(verb)),
+		uintptr(unsafe.Pointer(uri)),
+		0,
+		0,
+		1, // SW_SHOWNORMAL
+	)
+	// ShellExecuteW returns a value > 32 on success
+	if ret <= 32 {
+		return syscall.EINVAL
+	}
+	return nil
 }
 
 // setRegValue creates or updates a registry string value

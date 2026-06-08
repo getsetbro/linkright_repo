@@ -9,7 +9,12 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
+	syswindows "golang.org/x/sys/windows"
 )
+
+// singleInstanceMutex holds the Windows named mutex handle for the lifetime of
+// the process so it is not garbage-collected or closed prematurely.
+var singleInstanceMutex syswindows.Handle
 
 //go:embed all:frontend/dist
 var assets embed.FS
@@ -32,6 +37,24 @@ func main() {
 	urlArg := extractURLArg(args)
 	chooserMode := urlArg != ""
 	trayMode := isTrayMode(args)
+
+	// Single-instance guard: only enforce for settings mode (not chooser or tray).
+	// Uses a Windows named mutex so a second settings window cannot be opened.
+	if !chooserMode && !trayMode && !devMode {
+		const mutexName = "LinkRight_SingleInstance_Mutex"
+		mutexNamePtr, _ := syswindows.UTF16PtrFromString(mutexName)
+		mutex, mutexErr := syswindows.CreateMutex(nil, false, mutexNamePtr)
+		if mutexErr != nil {
+			// CreateMutex failed — exit anyway
+			os.Exit(0)
+		}
+		// Store in package-level var so the handle stays alive for the process lifetime.
+		singleInstanceMutex = mutex
+		if syswindows.GetLastError() == syswindows.ERROR_ALREADY_EXISTS {
+			// Another settings window is already open — exit silently
+			os.Exit(0)
+		}
+	}
 
 	// Window dimensions and options depend on mode
 	width, height := 900, 650

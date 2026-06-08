@@ -38,25 +38,25 @@ type Browser struct {
 	Type     string           `json:"type"` // "chromium", "firefox", "other"
 }
 
-// ChooserSettings controls the appearance and behavior of the chooser popup
-type ChooserSettings struct {
-	IconSize         string `json:"iconSize"`         // "small", "medium", "large"
-	ShowBrowserNames bool   `json:"showBrowserNames"` // show name labels under icons
-	ShowURL          bool   `json:"showURL"`          // show the full URL in the popup
+// PickerSettings controls the appearance and behavior of the picker popup
+type PickerSettings struct {
+	ShowBrowserNames bool `json:"showBrowserNames"` // show name labels under icons
+	ShowURL          bool `json:"showURL"`          // show the full URL in the popup
 }
 
 // Config is the root configuration stored in JSON
 type Config struct {
 	DefaultBrowser   string          `json:"defaultBrowser"`
 	DefaultProfile   string          `json:"defaultProfile"`
-	FallbackBehavior string          `json:"fallbackBehavior"` // "chooser" or "default"
-	Rules            []Rule          `json:"rules"`
-	FirstRun         bool            `json:"firstRun"`
-	ChooserSettings  ChooserSettings `json:"chooserSettings"`
+	FallbackBehavior string         `json:"fallbackBehavior"` // "picker" or "default"
+	Rules            []Rule         `json:"rules"`
+	FirstRun         bool           `json:"firstRun"`
+	PickerSettings   PickerSettings `json:"pickerSettings"`
+	StartWithWindows bool            `json:"startWithWindows"` // create Startup shortcut for tray
 }
 
-// ChooserRequest is sent to the frontend when the chooser popup is needed
-type ChooserRequest struct {
+// PickerRequest is sent to the frontend when the picker popup is needed
+type PickerRequest struct {
 	URL      string    `json:"url"`
 	Domain   string    `json:"domain"`
 	Reason   string    `json:"reason"`  // "no_rule", "missing_browser", "error"
@@ -64,8 +64,8 @@ type ChooserRequest struct {
 	Browsers []Browser `json:"browsers"`
 }
 
-// ChooserResponse is returned from the frontend when the user picks a browser
-type ChooserResponse struct {
+// PickerResponse is returned from the frontend when the user picks a browser
+type PickerResponse struct {
 	BrowserPath string `json:"browserPath"`
 	BrowserName string `json:"browserName"`
 	Profile     string `json:"profile"`

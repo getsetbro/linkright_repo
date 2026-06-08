@@ -7,26 +7,31 @@
   box-sizing: border-box;
 }
 
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   font-family: 'Arial', sans-serif;
   font-size: 14px;
   line-height: 1.5;
 }
 
-/* Scrollbar styling — no Tailwind equivalent */
+/* Scrollbar styling — dark theme to match the app */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #1f2937;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #4b5563;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #6b7280;
 }
 
 /* Dark scrollbar for chooser / tray — no Tailwind equivalent */

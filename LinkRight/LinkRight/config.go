@@ -56,13 +56,13 @@ func defaultConfig() Config {
 	return Config{
 		DefaultBrowser:   "",
 		DefaultProfile:   "Default",
-		FallbackBehavior: "chooser",
+		FallbackBehavior: "picker",
 		Rules:            []Rule{},
-		ChooserSettings: ChooserSettings{
-			IconSize:         "large",
+		PickerSettings: PickerSettings{
 			ShowBrowserNames: true,
 			ShowURL:          true,
 		},
+		StartWithWindows: true,
 	}
 }
 
