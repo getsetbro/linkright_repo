@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Popular Links</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 8px;
+      color: #f8fafc;
+      letter-spacing: 0.5px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.95rem;
+      margin-bottom: 36px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: background 0.2s, border-color 0.2s, transform 0.15s;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .card:hover {
+      background: #252840;
+      border-color: #4f5adb;
+      transform: translateY(-2px);
+    }
+
+    .favicon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      flex-shrink: 0;
+      object-fit: contain;
+      background: #2d3148;
+    }
+
+    .info {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .site-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #f1f5f9;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .site-url {
+      font-size: 0.78rem;
+      color: #64748b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+
+    .category-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    /* Category colors */
+    .cat-search    { background: #1e3a5f; color: #60a5fa; }
+    .cat-social    { background: #3b1f5e; color: #c084fc; }
+    .cat-video     { background: #5e1f1f; color: #f87171; }
+    .cat-news      { background: #1f3b2e; color: #4ade80; }
+    .cat-shopping  { background: #3b2e1f; color: #fb923c; }
+    .cat-tech      { background: #1f2e3b; color: #38bdf8; }
+    .cat-finance   { background: #2e3b1f; color: #a3e635; }
+    .cat-work      { background: #3b1f2e; color: #f472b6; }
+    .cat-ai        { background: #1f3b3b; color: #2dd4bf; }
+    .cat-reference { background: #2e2e1f; color: #facc15; }
+  </style>
+</head>
+<body>
+
+  <h1>🔗 Popular Links</h1>
+  <p class="subtitle">30 popular sites — add your rules below</p>
+
+  <div class="grid">
+
+    <!-- Search -->
+    <a class="card" href="https://www.google.com" target="_blank">
+      <img class="favicon" src="https://www.google.com/favicon.ico" alt="Google" />
+      <div class="info">
+        <span class="site-name">Google</span>
+        <span class="site-url">google.com</span>
+      </div>
+      <span class="category-label cat-search">Search</span>
+    </a>
+
+    <a class="card" href="https://www.bing.com" target="_blank">
+      <img class="favicon" src="https://www.bing.com/favicon.ico" alt="Bing" />
+      <div class="info">
+        <span class="site-name">Bing</span>
+        <span class="site-url">bing.com</span>
+      </div>
+      <span class="category-label cat-search">Search</span>
+    </a>
+
+    <a class="card" href="https://duckduckgo.com" target="_blank">
+      <img class="favicon" src="https://duckduckgo.com/favicon.ico" alt="DuckDuckGo" />
+      <div class="info">
+        <span class="site-name">DuckDuckGo</span>
+        <span class="site-url">duckduckgo.com</span>
+      </div>
+      <span class="category-label cat-search">Search</span>
+    </a>
+
+    <!-- Social -->
+    <a class="card" href="https://www.youtube.com" target="_blank">
+      <img class="favicon" src="https://www.youtube.com/favicon.ico" alt="YouTube" />
+      <div class="info">
+        <span class="site-name">YouTube</span>
+        <span class="site-url">youtube.com</span>
+      </div>
+      <span class="category-label cat-video">Video</span>
+    </a>
+
+    <a class="card" href="https://www.facebook.com" target="_blank">
+      <img class="favicon" src="https://www.facebook.com/favicon.ico" alt="Facebook" />
+      <div class="info">
+        <span class="site-name">Facebook</span>
+        <span class="site-url">facebook.com</span>
+      </div>
+      <span class="category-label cat-social">Social</span>
+    </a>
+
+    <a class="card" href="https://www.instagram.com" target="_blank">
+      <img class="favicon" src="https://www.instagram.com/favicon.ico" alt="Instagram" />
+      <div class="info">
+        <span class="site-name">Instagram</span>
+        <span class="site-url">instagram.com</span>
+      </div>
+      <span class="category-label cat-social">Social</span>
+    </a>
+
+    <a class="card" href="https://twitter.com" target="_blank">
+      <img class="favicon" src="https://twitter.com/favicon.ico" alt="X / Twitter" />
+      <div class="info">
+        <span class="site-name">X (Twitter)</span>
+        <span class="site-url">twitter.com</span>
+      </div>
+      <span class="category-label cat-social">Social</span>
+    </a>
+
+    <a class="card" href="https://www.tiktok.com" target="_blank">
+      <img class="favicon" src="https://www.tiktok.com/favicon.ico" alt="TikTok" />
+      <div class="info">
+        <span class="site-name">TikTok</span>
+        <span class="site-url">tiktok.com</span>
+      </div>
+      <span class="category-label cat-social">Social</span>
+    </a>
+
+    <a class="card" href="https://www.linkedin.com" target="_blank">
+      <img class="favicon" src="https://www.linkedin.com/favicon.ico" alt="LinkedIn" />
+      <div class="info">
+        <span class="site-name">LinkedIn</span>
+        <span class="site-url">linkedin.com</span>
+      </div>
+      <span class="category-label cat-social">Social</span>
+    </a>
+
+    <a class="card" href="https://www.reddit.com" target="_blank">
+      <img class="favicon" src="https://www.reddit.com/favicon.ico" alt="Reddit" />
+      <div class="info">
+        <span class="site-name">Reddit</span>
+        <span class="site-url">reddit.com</span>
+      </div>
+      <span class="category-label cat-social">Social</span>
+    </a>
+
+    <a class="card" href="https://www.pinterest.com" target="_blank">
+      <img class="favicon" src="https://www.pinterest.com/favicon.ico" alt="Pinterest" />
+      <div class="info">
+        <span class="site-name">Pinterest</span>
+        <span class="site-url">pinterest.com</span>
+      </div>
+      <span class="category-label cat-social">Social</span>
+    </a>
+
+    <!-- News -->
+    <a class="card" href="https://www.bbc.com" target="_blank">
+      <img class="favicon" src="https://www.bbc.com/favicon.ico" alt="BBC" />
+      <div class="info">
+        <span class="site-name">BBC</span>
+        <span class="site-url">bbc.com</span>
+      </div>
+      <span class="category-label cat-news">News</span>
+    </a>
+
+    <a class="card" href="https://www.cnn.com" target="_blank">
+      <img class="favicon" src="https://www.cnn.com/favicon.ico" alt="CNN" />
+      <div class="info">
+        <span class="site-name">CNN</span>
+        <span class="site-url">cnn.com</span>
+      </div>
+      <span class="category-label cat-news">News</span>
+    </a>
+
+    <!-- Shopping -->
+    <a class="card" href="https://www.amazon.com" target="_blank">
+      <img class="favicon" src="https://www.amazon.com/favicon.ico" alt="Amazon" />
+      <div class="info">
+        <span class="site-name">Amazon</span>
+        <span class="site-url">amazon.com</span>
+      </div>
+      <span class="category-label cat-shopping">Shopping</span>
+    </a>
+
+    <a class="card" href="https://www.ebay.com" target="_blank">
+      <img class="favicon" src="https://www.ebay.com/favicon.ico" alt="eBay" />
+      <div class="info">
+        <span class="site-name">eBay</span>
+        <span class="site-url">ebay.com</span>
+      </div>
+      <span class="category-label cat-shopping">Shopping</span>
+    </a>
+
+    <a class="card" href="https://www.etsy.com" target="_blank">
+      <img class="favicon" src="https://www.etsy.com/favicon.ico" alt="Etsy" />
+      <div class="info">
+        <span class="site-name">Etsy</span>
+        <span class="site-url">etsy.com</span>
+      </div>
+      <span class="category-label cat-shopping">Shopping</span>
+    </a>
+
+    <!-- Tech -->
+    <a class="card" href="https://github.com" target="_blank">
+      <img class="favicon" src="https://github.com/favicon.ico" alt="GitHub" />
+      <div class="info">
+        <span class="site-name">GitHub</span>
+        <span class="site-url">github.com</span>
+      </div>
+      <span class="category-label cat-tech">Tech</span>
+    </a>
+
+    <a class="card" href="https://stackoverflow.com" target="_blank">
+      <img class="favicon" src="https://stackoverflow.com/favicon.ico" alt="Stack Overflow" />
+      <div class="info">
+        <span class="site-name">Stack Overflow</span>
+        <span class="site-url">stackoverflow.com</span>
+      </div>
+      <span class="category-label cat-tech">Tech</span>
+    </a>
+
+    <a class="card" href="https://www.twitch.tv" target="_blank">
+      <img class="favicon" src="https://www.twitch.tv/favicon.ico" alt="Twitch" />
+      <div class="info">
+        <span class="site-name">Twitch</span>
+        <span class="site-url">twitch.tv</span>
+      </div>
+      <span class="category-label cat-video">Video</span>
+    </a>
+
+    <a class="card" href="https://www.netflix.com" target="_blank">
+      <img class="favicon" src="https://www.netflix.com/favicon.ico" alt="Netflix" />
+      <div class="info">
+        <span class="site-name">Netflix</span>
+        <span class="site-url">netflix.com</span>
+      </div>
+      <span class="category-label cat-video">Video</span>
+    </a>
+
+    <a class="card" href="https://www.spotify.com" target="_blank">
+      <img class="favicon" src="https://www.spotify.com/favicon.ico" alt="Spotify" />
+      <div class="info">
+        <span class="site-name">Spotify</span>
+        <span class="site-url">spotify.com</span>
+      </div>
+      <span class="category-label cat-tech">Music</span>
+    </a>
+
+    <!-- Finance -->
+    <a class="card" href="https://www.paypal.com" target="_blank">
+      <img class="favicon" src="https://www.paypal.com/favicon.ico" alt="PayPal" />
+      <div class="info">
+        <span class="site-name">PayPal</span>
+        <span class="site-url">paypal.com</span>
+      </div>
+      <span class="category-label cat-finance">Finance</span>
+    </a>
+
+    <!-- Work / Productivity -->
+    <a class="card" href="https://mail.google.com" target="_blank">
+      <img class="favicon" src="https://mail.google.com/favicon.ico" alt="Gmail" />
+      <div class="info">
+        <span class="site-name">Gmail</span>
+        <span class="site-url">mail.google.com</span>
+      </div>
+      <span class="category-label cat-work">Work</span>
+    </a>
+
+    <a class="card" href="https://drive.google.com" target="_blank">
+      <img class="favicon" src="https://drive.google.com/favicon.ico" alt="Google Drive" />
+      <div class="info">
+        <span class="site-name">Google Drive</span>
+        <span class="site-url">drive.google.com</span>
+      </div>
+      <span class="category-label cat-work">Work</span>
+    </a>
+
+    <a class="card" href="https://www.dropbox.com" target="_blank">
+      <img class="favicon" src="https://www.dropbox.com/favicon.ico" alt="Dropbox" />
+      <div class="info">
+        <span class="site-name">Dropbox</span>
+        <span class="site-url">dropbox.com</span>
+      </div>
+      <span class="category-label cat-work">Work</span>
+    </a>
+
+    <a class="card" href="https://slack.com" target="_blank">
+      <img class="favicon" src="https://slack.com/favicon.ico" alt="Slack" />
+      <div class="info">
+        <span class="site-name">Slack</span>
+        <span class="site-url">slack.com</span>
+      </div>
+      <span class="category-label cat-work">Work</span>
+    </a>
+
+    <a class="card" href="https://zoom.us" target="_blank">
+      <img class="favicon" src="https://zoom.us/favicon.ico" alt="Zoom" />
+      <div class="info">
+        <span class="site-name">Zoom</span>
+        <span class="site-url">zoom.us</span>
+      </div>
+      <span class="category-label cat-work">Work</span>
+    </a>
+
+    <!-- AI -->
+    <a class="card" href="https://chat.openai.com" target="_blank">
+      <img class="favicon" src="https://chat.openai.com/favicon.ico" alt="ChatGPT" />
+      <div class="info">
+        <span class="site-name">ChatGPT</span>
+        <span class="site-url">chat.openai.com</span>
+      </div>
+      <span class="category-label cat-ai">AI</span>
+    </a>
+
+    <!-- Reference -->
+    <a class="card" href="https://www.wikipedia.org" target="_blank">
+      <img class="favicon" src="https://www.wikipedia.org/favicon.ico" alt="Wikipedia" />
+      <div class="info">
+        <span class="site-name">Wikipedia</span>
+        <span class="site-url">wikipedia.org</span>
+      </div>
+      <span class="category-label cat-reference">Reference</span>
+    </a>
+
+    <a class="card" href="https://www.wolframalpha.com" target="_blank">
+      <img class="favicon" src="https://www.wolframalpha.com/favicon.ico" alt="Wolfram Alpha" />
+      <div class="info">
+        <span class="site-name">Wolfram Alpha</span>
+        <span class="site-url">wolframalpha.com</span>
+      </div>
+      <span class="category-label cat-reference">Reference</span>
+    </a>
+
+  </div>
+
+</body>
+</html>

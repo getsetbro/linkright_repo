@@ -204,19 +204,19 @@ Modelled after Velja (macOS) — a dark, menu-style panel with browser shortcuts
 - [x] `.tray-shortcut` — right-aligned keyboard shortcut badge (monospace, muted)
 - [x] `.tray-check` — checkmark indicator for the active default browser
 
-### Phase 10: Build & Distribution 
-- [ ] `wails build` → single `LinkRight.exe` (11 MB, built successfully)
-- [ ] Test on clean Windows user account
-- [ ] Verify: link interception, rule matching, Chooser popup, profile launching
-- [ ] README with usage instructions
+### Phase 10: Build & Distribution ✅
+- [x] `wails build` → single `LinkRight.exe` (~14 MB, built successfully at `build/bin/LinkRight.exe`)
+- [x] Test on clean Windows user account
+- [x] Verify: link interception, rule matching, Chooser popup, profile launching
+- [x] README with usage instructions (`README.md` — full user-facing docs)
 
-### Phase 12: Uninstaller
-- [ ] Create `LinkRight-Uninstall.exe` (or embedded uninstall flag `--uninstall`)
-- [ ] Remove all HKCU registry entries written by Link Right
-- [ ] Delete `%APPDATA%\LinkRight\` directory and all contents
-- [ ] Remove any Start Menu / Desktop shortcuts created at install
-- [ ] Confirm the PC is left in the exact state it was before Link Right was installed
-- [ ] Show a brief confirmation dialog before and after uninstall
+### Phase 11: Uninstaller ✅
+- [x] Embedded uninstall flag `--uninstall` in `LinkRight.exe` (no separate exe needed)
+- [x] Remove all HKCU registry entries written by Link Right (`uninstall.go`)
+- [x] Delete `%APPDATA%\LinkRight\` directory and all contents
+- [x] Remove any Start Menu shortcuts created at install
+- [x] Confirm the PC is left in the exact state it was before Link Right was installed
+- [x] Show a brief confirmation dialog before and after uninstall (Windows native MessageBox)
 
 ---
 

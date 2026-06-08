@@ -16,6 +16,15 @@ var assets embed.FS
 
 func main() {
 	args := os.Args[1:]
+
+	// Handle --uninstall flag before starting the Wails UI
+	for _, arg := range args {
+		if arg == "--uninstall" {
+			RunUninstall()
+			return
+		}
+	}
+
 	devMode := isDevMode(args)
 	app := NewApp(devMode)
 
@@ -27,18 +36,16 @@ func main() {
 	// Window dimensions and options depend on mode
 	width, height := 900, 650
 	minWidth, minHeight := 700, 500
-	frameless := false
+	frameless := true
 	alwaysOnTop := false
 	resizable := true
-	title := "Link Right"
+	title := ""
 
 	if trayMode {
 		width, height = 320, 480
 		minWidth, minHeight = 320, 480
-		frameless = true
 		alwaysOnTop = true
 		resizable = false
-		title = ""
 	} else if chooserMode {
 		width, height = 520, 380
 		minWidth, minHeight = 520, 380

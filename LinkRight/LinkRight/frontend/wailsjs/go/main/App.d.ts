@@ -14,6 +14,8 @@ export function GetChooserData():Promise<main.ChooserRequest>;
 
 export function GetChooserSettings():Promise<main.ChooserSettings>;
 
+export function GetClipboardURL():Promise<string>;
+
 export function GetConfig():Promise<main.Config>;
 
 export function GetCurrentURL():Promise<string>;
@@ -22,17 +24,33 @@ export function GetProtocolApps():Promise<Array<main.ProtocolApp>>;
 
 export function GetRules():Promise<Array<main.Rule>>;
 
+export function GetTrayData():Promise<main.TrayData>;
+
 export function IsChooserMode():Promise<boolean>;
 
 export function IsDevMode():Promise<boolean>;
 
+export function IsFirstRun():Promise<boolean>;
+
+export function IsTrayMode():Promise<boolean>;
+
+export function LaunchBrowserByName(arg1:string):Promise<void>;
+
 export function LookupProtocol(arg1:string):Promise<main.ProtocolApp>;
 
+export function MarkFirstRunComplete():Promise<void>;
+
 export function OpenDefaultAppsSettings():Promise<void>;
+
+export function OpenSettings():Promise<void>;
+
+export function OpenURLFromClipboard():Promise<string>;
 
 export function OpenWithBrowser(arg1:main.ChooserResponse):Promise<void>;
 
 export function ProcessURL(arg1:string):Promise<string>;
+
+export function QuitApp():Promise<void>;
 
 export function RefreshBrowsers():Promise<Array<main.Browser>>;
 

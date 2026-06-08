@@ -1,14 +1,14 @@
-// Link Right — Main UI (Phase 8 Settings + Phase 7 Chooser)
+// Link Right — Main UI (Settings + Chooser)
 import * as App from '../wailsjs/go/main/App.js';
 import * as Runtime from '../wailsjs/runtime/runtime.js';
 
 // ─── State ───────────────────────────────────────────────────────────────────
 let state = {
   // Mode
-  mode: 'settings',        // 'settings' | 'chooser' | 'tray'
+  mode: 'settings',        // 'settings' | 'chooser'
 
   // Settings UI
-  tab: 'general',          // 'general' | 'browsers' | 'rules' | 'prompt'
+  tab: 'general',          // 'general' | 'browsers' | 'rules' | 'prompt' | 'icons'
   browsers: [],
   rules: [],
   config: {},
@@ -24,9 +24,6 @@ let state = {
   selectedProfileId: '',
   alwaysUse: false,
 
-  // Tray UI
-  trayData: null,          // TrayData
-
   // First-run
   showFirstRun: false,
 };
@@ -34,20 +31,11 @@ let state = {
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
   try {
-    // Check tray mode first (--tray flag)
-    const isTray = await App.IsTrayMode();
+    // Check if we're in chooser mode (launched with a URL)
+    let isChooser = false;
+    try { isChooser = await App.IsChooserMode(); } catch (_) {}
 
-    if (isTray) {
-      state.mode = 'tray';
-      const trayData = await App.GetTrayData();
-      state.trayData = trayData;
-
-    } else {
-      // Check if we're in chooser mode (launched with a URL)
-      let isChooser = false;
-      try { isChooser = await App.IsChooserMode(); } catch (_) {}
-
-      if (isChooser) {
+    if (isChooser) {
         state.mode = 'chooser';
 
         try {
@@ -109,7 +97,6 @@ window.addEventListener('load', async () => {
           }
         } catch (_) {}
       }
-    }
   } catch (e) {
     console.warn('Backend not available, using empty state', e);
   }
@@ -150,9 +137,7 @@ function handleKeyDown(e) {
 
 // ─── Render ───────────────────────────────────────────────────────────────────
 function render() {
-  if (state.mode === 'tray') {
-    renderTrayMode();
-  } else if (state.mode === 'chooser') {
+  if (state.mode === 'chooser') {
     renderChooserMode();
   } else {
     renderSettingsMode();
@@ -179,7 +164,7 @@ function renderTrayMode() {
 
       <!-- Open URL from Clipboard -->
       <div class="${rowBase} ${clipURL ? rowHover : rowDisabled}" id="tray-open-clip">
-        <span class="${iconCls}">🔗</span>
+        <span class="${iconCls}" style="font-family:'Segoe MDL2 Assets',sans-serif">&#xE71B;</span>
         <span class="${labelCls}">Open URL from Clipboard</span>
         ${clipURL ? `<span class="${shortcutCls}">P</span>` : ''}
       </div>
@@ -210,18 +195,18 @@ function renderTrayMode() {
       <!-- Footer actions -->
       <div class="flex-shrink-0">
         <div class="${rowBase} ${rowHover}" id="tray-settings">
-          <span class="${iconCls}">⚙</span>
+          <span class="${iconCls}" style="font-family:'Segoe MDL2 Assets',sans-serif">&#xE713;</span>
           <span class="${labelCls}">Settings…</span>
           <span class="${shortcutCls}">⌘,</span>
         </div>
         <div class="${rowBase} ${rowHover}" id="tray-more">
-          <span class="${iconCls}">···</span>
+          <span class="${iconCls}" style="font-family:'Segoe MDL2 Assets',sans-serif">&#xE712;</span>
           <span class="${labelCls}">More</span>
-          <span class="text-[10px] text-slate-500 flex-shrink-0">›</span>
+          <span class="text-[10px] text-slate-500 flex-shrink-0" style="font-family:'Segoe MDL2 Assets',sans-serif">&#xE76C;</span>
         </div>
         <div class="h-px bg-white/[0.07] my-1"></div>
         <div class="${rowBase} ${rowHover}" id="tray-quit">
-          <span class="${iconCls}">⊗</span>
+          <span class="${iconCls}" style="font-family:'Segoe MDL2 Assets',sans-serif">&#xE711;</span>
           <span class="${labelCls}">Quit LinkRight</span>
           <span class="${shortcutCls}">⌘Q</span>
         </div>
@@ -330,9 +315,19 @@ function renderChooserMode() {
   document.getElementById('app').innerHTML = `
     <div class="chooser-root flex flex-col h-screen bg-gray-900 text-gray-100 select-none overflow-hidden">
 
+      <!-- Frameless title bar / drag region -->
+      <div class="flex items-center h-8 bg-gray-900 select-none flex-shrink-0"
+           style="--wails-draggable: drag">
+        <span class="flex-1 pl-3 text-xs text-gray-500">Open with…</span>
+        <button id="btn-chooser-close"
+          class="w-9 h-8 flex items-center justify-center text-gray-500 hover:text-white hover:bg-red-600 transition-colors text-sm leading-none"
+          style="--wails-draggable: no-drag"
+          title="Close">&#x2715;</button>
+      </div>
+
       <!-- Header: URL display -->
       ${showURL ? `
-      <div class="px-4 pt-4 pb-2">
+      <div class="px-4 pt-2 pb-2">
         <div class="text-xs text-gray-500 mb-1">Opening link</div>
         <div class="break-all text-xs text-gray-400 bg-gray-800 px-3 py-1.5 rounded-md border border-gray-700 max-h-[52px] overflow-y-auto font-mono">${esc(truncateURL(data.url, 80))}</div>
       </div>
@@ -344,7 +339,7 @@ function renderChooserMode() {
 
       ${data.warning ? `
       <div class="mx-4 mb-2 px-3 py-2 bg-yellow-900 border border-yellow-700 rounded-lg text-xs text-yellow-200">
-        ⚠ ${esc(data.warning)}
+        <span style="font-family:'Segoe MDL2 Assets',sans-serif">&#xE89D;</span> ${esc(data.warning)}
       </div>
       ` : ''}
 
@@ -422,6 +417,9 @@ function renderChooserBrowserCard(browser, index, iconSize, showNames) {
 }
 
 function attachChooserListeners() {
+  // Frameless close button
+  document.getElementById('btn-chooser-close')?.addEventListener('click', cancelChooser);
+
   // Browser card clicks
   document.querySelectorAll('.chooser-browser-card').forEach(card => {
     card.addEventListener('click', () => {
@@ -525,6 +523,8 @@ function renderSettingsMode() {
         ${state.tab === 'browsers' ? renderBrowsers() : ''}
         ${state.tab === 'rules'    ? renderRules()    : ''}
         ${state.tab === 'prompt'   ? renderPrompt()   : ''}
+        ${state.tab === 'icons'    ? renderIconsTab() : ''}
+        ${state.tab === 'advanced' ? renderAdvanced() : ''}
       </div>
     </div>
     ${state.editingRule !== null ? renderRuleEditorOverlay() : ''}
@@ -541,7 +541,7 @@ function renderFirstRunOverlay() {
       <div class="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-700 flex flex-col items-center text-center px-8 py-8 gap-5 fade-in">
 
         <!-- Icon -->
-        <div class="text-5xl leading-none">🔗</div>
+        <div class="text-5xl leading-none" style="font-family:'Segoe MDL2 Assets',sans-serif">&#xE71B;</div>
 
         <!-- Heading -->
         <div>
@@ -599,19 +599,31 @@ function attachFirstRunListeners() {
 // ─── Title Bar ────────────────────────────────────────────────────────────────
 function renderTitleBar() {
   return `
-    <div class="flex items-center justify-center py-3 border-b border-gray-700 bg-gray-900">
-      <span class="text-sm font-semibold text-gray-200 tracking-wide">Preferences</span>
+    <div class="flex items-center h-9 border-b border-gray-700 bg-gray-900 select-none"
+         style="--wails-draggable: drag">
+      <span class="flex-1 pl-3 text-sm font-semibold text-gray-200 tracking-wide">Preferences</span>
+      <button id="btn-titlebar-minimize"
+        class="w-10 h-9 flex items-center justify-center text-gray-400 hover:text-gray-100 hover:bg-gray-700 transition-colors text-base leading-none"
+        style="--wails-draggable: no-drag"
+        title="Minimize">&#x2014;</button>
+      <button id="btn-titlebar-close"
+        class="w-10 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-red-600 transition-colors text-base leading-none"
+        style="--wails-draggable: no-drag"
+        title="Close">&#x2715;</button>
     </div>
   `;
 }
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 function renderTabs() {
+  // All icons from Segoe MDL2 Assets
   const tabs = [
-    { id: 'general',  label: 'General',  icon: '⚙️' },
-    { id: 'browsers', label: 'Browsers', icon: '🌐' },
-    { id: 'rules',    label: 'Rules',    icon: '☰' },
-    { id: 'prompt',   label: 'Prompt',   icon: '🔲' },
+    { id: 'general',  label: 'General',  icon: '\uE713' }, // Settings
+    { id: 'browsers', label: 'Browsers', icon: '\uE774' }, // Slideshow (globe-like)
+    { id: 'rules',    label: 'Rules',    icon: '\uE71C' }, // Filter
+    { id: 'prompt',   label: 'Prompt',   icon: '\uE8A7' }, // Work (dialog/prompt)
+    { id: 'icons',    label: 'Icons',    icon: '\uE77B' }, // Color
+    { id: 'advanced', label: 'Advanced', icon: '\uE90F' }, // Admin/wrench
   ];
   return `
     <div class="flex justify-center gap-6 py-2 border-b border-gray-700 bg-gray-900">
@@ -620,7 +632,7 @@ function renderTabs() {
           ${state.tab === t.id
             ? 'text-blue-400 border-b-2 border-blue-400'
             : 'text-gray-400 hover:text-gray-200'}">
-          <span class="text-lg leading-none">${t.icon}</span>
+          <span class="text-lg leading-none" style="font-family:'Segoe MDL2 Assets',sans-serif">${t.icon}</span>
           <span>${t.label}</span>
         </button>
       `).join('')}
@@ -628,17 +640,16 @@ function renderTabs() {
   `;
 }
 
-// ─── General Tab ──────────────────────────────────────────────────────────────
-function renderGeneral() {
+// ─── Advanced Tab ─────────────────────────────────────────────────────────────
+function renderAdvanced() {
   const s = state.appStatus;
-  const c = state.config;
-  const defaultBrowser = state.browsers.find(b => b.name === c.defaultBrowser);
   return `
     <div class="p-5 space-y-5 overflow-y-auto h-full">
 
       <section class="space-y-2">
-        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Registration</h2>
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Browser Registration</h2>
         <div class="bg-gray-800 rounded-lg p-4 space-y-3">
+          <div class="text-xs text-gray-500 mb-1">Register or unregister Link Right as a Windows browser. Unregistering removes all registry entries without deleting the app.</div>
           <div class="flex items-center justify-between">
             <div>
               <div class="text-sm font-medium text-gray-200">Registered as browser</div>
@@ -651,6 +662,24 @@ function renderGeneral() {
               }
             </div>
           </div>
+        </div>
+      </section>
+
+    </div>
+  `;
+}
+
+// ─── General Tab ──────────────────────────────────────────────────────────────
+function renderGeneral() {
+  const s = state.appStatus;
+  const c = state.config;
+  const defaultBrowser = (state.browsers || []).find(b => b.name === c.defaultBrowser);
+  return `
+    <div class="p-5 space-y-5 overflow-y-auto h-full">
+
+      <section class="space-y-2">
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Default Browser Status</h2>
+        <div class="bg-gray-800 rounded-lg p-4 space-y-3">
           <div class="flex items-center justify-between">
             <div>
               <div class="text-sm font-medium text-gray-200">Default browser</div>
@@ -718,7 +747,7 @@ function renderGeneral() {
 }
 
 function renderProfileOptions(browserName, selectedProfile) {
-  const browser = state.browsers.find(b => b.name === browserName);
+  const browser = (state.browsers || []).find(b => b.name === browserName);
   if (!browser || !browser.profiles || browser.profiles.length === 0) {
     return `<option value="">Default</option>`;
   }
@@ -772,7 +801,7 @@ function renderRules() {
       <div class="flex-1 overflow-y-auto">
         ${state.rules.length === 0
           ? `<div class="flex flex-col items-center justify-center h-40 text-gray-500 text-sm gap-2">
-               <span class="text-3xl">📋</span>
+               <span class="text-3xl" style="font-family:'Segoe MDL2 Assets',sans-serif">&#xE71C;</span>
                <span>No rules yet</span>
                <span class="text-xs text-gray-600">Click + to add your first rule</span>
              </div>`
@@ -793,7 +822,7 @@ function renderRules() {
 }
 
 function renderRuleRow(rule, index) {
-  const validation = state.validations.find(v => v.ruleId === rule.id);
+  const validation = (state.validations || []).find(v => v.ruleId === rule.id);
   const hasWarning = validation && (validation.browserMissing || validation.profileMissing);
   const condSummary = getRuleConditionSummary(rule);
   const browserName = rule.browser || '—';
@@ -881,11 +910,536 @@ function renderPrompt() {
           class="flex-1 py-2 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors font-medium">
           Save Settings
         </button>
-        <button id="btn-preview-prompt"
-          class="px-4 py-2 text-sm text-gray-300 hover:text-gray-100 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors border border-gray-600">
-          Preview Prompt
-        </button>
       </div>
+
+    </div>
+  `;
+}
+
+// ─── Icons Tab ────────────────────────────────────────────────────────────────
+function renderIconsTab() {
+  // Segoe MDL2 Assets — common glyphs with names and codepoints
+  const mdl2Icons = [
+    { code: '\uE700', name: 'GlobalNavButton' },
+    { code: '\uE701', name: 'Wifi' },
+    { code: '\uE702', name: 'Bluetooth' },
+    { code: '\uE703', name: 'Connect' },
+    { code: '\uE704', name: 'InternetSharing' },
+    { code: '\uE705', name: 'VPN' },
+    { code: '\uE706', name: 'Brightness' },
+    { code: '\uE707', name: 'MapPin' },
+    { code: '\uE708', name: 'QuietHours' },
+    { code: '\uE709', name: 'Airplane' },
+    { code: '\uE70A', name: 'Tablet' },
+    { code: '\uE70B', name: 'QuickNote' },
+    { code: '\uE70C', name: 'RememberedDevice' },
+    { code: '\uE70D', name: 'ChevronDown' },
+    { code: '\uE70E', name: 'ChevronUp' },
+    { code: '\uE70F', name: 'Edit' },
+    { code: '\uE710', name: 'Add' },
+    { code: '\uE711', name: 'Cancel' },
+    { code: '\uE712', name: 'More' },
+    { code: '\uE713', name: 'Settings' },
+    { code: '\uE714', name: 'Video' },
+    { code: '\uE715', name: 'Mail' },
+    { code: '\uE716', name: 'People' },
+    { code: '\uE717', name: 'Phone' },
+    { code: '\uE718', name: 'Pin' },
+    { code: '\uE719', name: 'Shop' },
+    { code: '\uE71A', name: 'Stop' },
+    { code: '\uE71B', name: 'Link' },
+    { code: '\uE71C', name: 'Filter' },
+    { code: '\uE71D', name: 'AllApps' },
+    { code: '\uE71E', name: 'Zoom' },
+    { code: '\uE71F', name: 'ZoomOut' },
+    { code: '\uE720', name: 'Microphone' },
+    { code: '\uE721', name: 'Search' },
+    { code: '\uE722', name: 'Camera' },
+    { code: '\uE723', name: 'Attach' },
+    { code: '\uE724', name: 'Send' },
+    { code: '\uE725', name: 'SendFill' },
+    { code: '\uE726', name: 'WalkSolid' },
+    { code: '\uE727', name: 'InPrivate' },
+    { code: '\uE728', name: 'FavoriteList' },
+    { code: '\uE729', name: 'PageSolid' },
+    { code: '\uE72A', name: 'Forward' },
+    { code: '\uE72B', name: 'Back' },
+    { code: '\uE72C', name: 'Refresh' },
+    { code: '\uE72D', name: 'Share' },
+    { code: '\uE72E', name: 'Lock' },
+    { code: '\uE730', name: 'ReportHacked' },
+    { code: '\uE731', name: 'EMI' },
+    { code: '\uE734', name: 'FavoriteStar' },
+    { code: '\uE735', name: 'FavoriteStarFill' },
+    { code: '\uE738', name: 'Remove' },
+    { code: '\uE739', name: 'Checkbox' },
+    { code: '\uE73A', name: 'CheckboxComposite' },
+    { code: '\uE73B', name: 'CheckboxFill' },
+    { code: '\uE73C', name: 'CheckboxIndeterminate' },
+    { code: '\uE73D', name: 'CheckboxCompositeReversed' },
+    { code: '\uE73E', name: 'CheckMark' },
+    { code: '\uE740', name: 'BackSpaceQWERTY' },
+    { code: '\uE741', name: 'SelectAll' },
+    { code: '\uE742', name: 'Orientation' },
+    { code: '\uE743', name: 'Import' },
+    { code: '\uE74A', name: 'TouchPointer' },
+    { code: '\uE74B', name: 'Merge' },
+    { code: '\uE74C', name: 'NewWindow' },
+    { code: '\uE74D', name: 'Mail2' },
+    { code: '\uE74E', name: 'MailFilled' },
+    { code: '\uE74F', name: 'BlockContact' },
+    { code: '\uE750', name: 'AddFriend' },
+    { code: '\uE751', name: 'TouchPointer2' },
+    { code: '\uE752', name: 'GoToStart' },
+    { code: '\uE753', name: 'ZeroBars' },
+    { code: '\uE754', name: 'OneBar' },
+    { code: '\uE755', name: 'TwoBars' },
+    { code: '\uE756', name: 'ThreeBars' },
+    { code: '\uE757', name: 'FourBars' },
+    { code: '\uE758', name: 'World' },
+    { code: '\uE759', name: 'Comment' },
+    { code: '\uE75A', name: 'MusicInfo' },
+    { code: '\uE75B', name: 'ChevronLeft' },
+    { code: '\uE75C', name: 'ChevronRight' },
+    { code: '\uE75D', name: 'InkingTool' },
+    { code: '\uE75E', name: 'Emoji2' },
+    { code: '\uE75F', name: 'GripperBarHorizontal' },
+    { code: '\uE760', name: 'System' },
+    { code: '\uE761', name: 'Personalize' },
+    { code: '\uE762', name: 'Devices' },
+    { code: '\uE763', name: 'SearchAndApps' },
+    { code: '\uE764', name: 'Globe' },
+    { code: '\uE765', name: 'TimeLanguage' },
+    { code: '\uE766', name: 'EaseOfAccess' },
+    { code: '\uE767', name: 'UpdateRestore' },
+    { code: '\uE768', name: 'HangUp' },
+    { code: '\uE769', name: 'ContactInfo' },
+    { code: '\uE76A', name: 'Unpin' },
+    { code: '\uE76B', name: 'Contact' },
+    { code: '\uE76C', name: 'Memo' },
+    { code: '\uE76D', name: 'IncomingCall' },
+    { code: '\uE76E', name: 'Paste' },
+    { code: '\uE76F', name: 'PhoneBook' },
+    { code: '\uE770', name: 'LEDLight' },
+    { code: '\uE771', name: 'Error' },
+    { code: '\uE772', name: 'GripperBarVertical' },
+    { code: '\uE773', name: 'Unlock' },
+    { code: '\uE774', name: 'Slideshow' },
+    { code: '\uE775', name: 'Calendar' },
+    { code: '\uE776', name: 'GripperResize' },
+    { code: '\uE777', name: 'Megaphone' },
+    { code: '\uE778', name: 'Trim' },
+    { code: '\uE779', name: 'NewWindow2' },
+    { code: '\uE77A', name: 'SaveLocal' },
+    { code: '\uE77B', name: 'Color' },
+    { code: '\uE77C', name: 'DataSense' },
+    { code: '\uE77D', name: 'SaveAs' },
+    { code: '\uE77E', name: 'Light' },
+    { code: '\uE77F', name: 'Effects' },
+    { code: '\uE780', name: 'Bus' },
+    { code: '\uE781', name: 'Cloudy' },
+    { code: '\uE782', name: 'PartlyCloudyDay' },
+    { code: '\uE783', name: 'PartlyCloudyNight' },
+    { code: '\uE784', name: 'ClearNight' },
+    { code: '\uE785', name: 'StrongWind' },
+    { code: '\uE786', name: 'Squalls' },
+    { code: '\uE787', name: 'Freezing' },
+    { code: '\uE788', name: 'Hail' },
+    { code: '\uE789', name: 'SleetShowers' },
+    { code: '\uE78A', name: 'Sleet' },
+    { code: '\uE78B', name: 'SnowShowers' },
+    { code: '\uE78C', name: 'Snow' },
+    { code: '\uE78D', name: 'BlowingSnow' },
+    { code: '\uE78E', name: 'Frigid' },
+    { code: '\uE78F', name: 'Fog' },
+    { code: '\uE790', name: 'Haze' },
+    { code: '\uE791', name: 'RainShowers' },
+    { code: '\uE792', name: 'Rain' },
+    { code: '\uE793', name: 'Thunderstorms' },
+    { code: '\uE794', name: 'TStormShowers' },
+    { code: '\uE795', name: 'TStormSnoShowers' },
+    { code: '\uE796', name: 'ChanceOfRain' },
+    { code: '\uE797', name: 'ChanceOfSnow' },
+    { code: '\uE798', name: 'ChanceOfStorms' },
+    { code: '\uE799', name: 'Hot' },
+    { code: '\uE79A', name: 'Blizzard' },
+    { code: '\uE79B', name: 'Snowy' },
+    { code: '\uE79C', name: 'BatterySaver9' },
+    { code: '\uE79D', name: 'BatterySaver10' },
+    { code: '\uE79E', name: 'BatterySaverFull' },
+    { code: '\uE7A5', name: 'Battery0' },
+    { code: '\uE7A6', name: 'Battery1' },
+    { code: '\uE7A7', name: 'Battery2' },
+    { code: '\uE7A8', name: 'Battery3' },
+    { code: '\uE7A9', name: 'Battery4' },
+    { code: '\uE7AA', name: 'Battery5' },
+    { code: '\uE7AB', name: 'Battery6' },
+    { code: '\uE7AC', name: 'Battery7' },
+    { code: '\uE7AD', name: 'Battery8' },
+    { code: '\uE7AE', name: 'Battery9' },
+    { code: '\uE7AF', name: 'Battery10' },
+    { code: '\uE7B0', name: 'BatteryCharging0' },
+    { code: '\uE7B1', name: 'BatteryCharging1' },
+    { code: '\uE7B2', name: 'BatteryCharging2' },
+    { code: '\uE7B3', name: 'BatteryCharging3' },
+    { code: '\uE7B4', name: 'BatteryCharging4' },
+    { code: '\uE7B5', name: 'BatteryCharging5' },
+    { code: '\uE7B6', name: 'BatteryCharging6' },
+    { code: '\uE7B7', name: 'BatteryCharging7' },
+    { code: '\uE7B8', name: 'BatteryCharging8' },
+    { code: '\uE7B9', name: 'BatteryCharging9' },
+    { code: '\uE7BA', name: 'BatteryCharging10' },
+    { code: '\uE7BC', name: 'BatteryUnknown' },
+    { code: '\uE7BE', name: 'WifiAttentionOverlay' },
+    { code: '\uE7BF', name: 'Robots' },
+    { code: '\uE7C0', name: 'Bus2' },
+    { code: '\uE7C1', name: 'Car' },
+    { code: '\uE7C2', name: 'Ferry' },
+    { code: '\uE7C3', name: 'Walk' },
+    { code: '\uE7C4', name: 'Cycling' },
+    { code: '\uE7C5', name: 'TransitConnection' },
+    { code: '\uE7C6', name: 'TransitConnectionDash' },
+    { code: '\uE7C7', name: 'TransitConnectionTransfer' },
+    { code: '\uE7C8', name: 'StatusCircleLeft' },
+    { code: '\uE7C9', name: 'StatusTriangleLeft' },
+    { code: '\uE7CA', name: 'StatusCircleRight' },
+    { code: '\uE7CB', name: 'StatusTriangleRight' },
+    { code: '\uE7CC', name: 'StatusCircleInner' },
+    { code: '\uE7CD', name: 'StatusTriangleInner' },
+    { code: '\uE7CE', name: 'StatusCircleRing' },
+    { code: '\uE7CF', name: 'StatusTriangleOuter' },
+    { code: '\uE7D0', name: 'StatusCircleCheckmark' },
+    { code: '\uE7D1', name: 'StatusCircleInfo' },
+    { code: '\uE7D2', name: 'StatusCircleBlock' },
+    { code: '\uE7D3', name: 'StatusCircleBlock2' },
+    { code: '\uE7D4', name: 'StatusCircleQuestionMark' },
+    { code: '\uE7D5', name: 'StatusCircleSync' },
+    { code: '\uE7D6', name: 'Dial1' },
+    { code: '\uE7D7', name: 'Dial2' },
+    { code: '\uE7D8', name: 'Dial3' },
+    { code: '\uE7D9', name: 'Dial4' },
+    { code: '\uE7DA', name: 'Dial5' },
+    { code: '\uE7DB', name: 'Dial6' },
+    { code: '\uE7DC', name: 'Dial7' },
+    { code: '\uE7DD', name: 'Dial8' },
+    { code: '\uE7DE', name: 'DialShape1' },
+    { code: '\uE7DF', name: 'DialShape2' },
+    { code: '\uE7E0', name: 'DialShape3' },
+    { code: '\uE7E1', name: 'DialShape4' },
+    { code: '\uE7E3', name: 'TollSolid' },
+    { code: '\uE7E4', name: 'TrafficCongestionSolid' },
+    { code: '\uE7E6', name: 'ExploreContentSingle' },
+    { code: '\uE7E7', name: 'CollapseContent' },
+    { code: '\uE7E8', name: 'CollapseContentSingle' },
+    { code: '\uE7E9', name: 'InfoSolid' },
+    { code: '\uE7EA', name: 'GroupList' },
+    { code: '\uE7EB', name: 'CaretBottomRightSolidCenter8' },
+    { code: '\uE7EC', name: 'ProgressRingDots' },
+    { code: '\uE7ED', name: 'Checkbox2' },
+    { code: '\uE7EE', name: 'CheckboxComposite2' },
+    { code: '\uE7EF', name: 'CheckboxIndeterminate2' },
+    { code: '\uE7F0', name: 'CheckboxCompositeReversed2' },
+    { code: '\uE7F1', name: 'CheckMark2' },
+    { code: '\uE7F2', name: 'BackSpaceQWERTYSm' },
+    { code: '\uE7F3', name: 'BackSpaceQWERTYMd' },
+    { code: '\uE7F4', name: 'Swipe' },
+    { code: '\uE7F5', name: 'Fingerprint' },
+    { code: '\uE7F6', name: 'Handwriting' },
+    { code: '\uE7F7', name: 'ChromeBack' },
+    { code: '\uE7F8', name: 'ChromeForward' },
+    { code: '\uE7F9', name: 'ChromeRefresh' },
+    { code: '\uE7FA', name: 'ChromeShare' },
+    { code: '\uE7FB', name: 'ChromeBookmarks' },
+    { code: '\uE7FC', name: 'ChromeBookmarksFill' },
+    { code: '\uE7FD', name: 'ChromeTabsSearch' },
+    { code: '\uE7FE', name: 'ChromeHome' },
+    { code: '\uE7FF', name: 'ChromeAnnotate' },
+    { code: '\uE800', name: 'ChromeAnnotateFill' },
+    { code: '\uE801', name: 'ChromeClose' },
+    { code: '\uE802', name: 'ChromeMinimize' },
+    { code: '\uE803', name: 'ChromeMaximize' },
+    { code: '\uE804', name: 'ChromeRestore' },
+    { code: '\uE805', name: 'Paste2' },
+    { code: '\uE806', name: 'Cut' },
+    { code: '\uE807', name: 'Copy' },
+    { code: '\uE808', name: 'Important' },
+    { code: '\uE809', name: 'MailReply' },
+    { code: '\uE80A', name: 'Sort' },
+    { code: '\uE80B', name: 'MobileTablet' },
+    { code: '\uE80C', name: 'DisconnectDrive' },
+    { code: '\uE80D', name: 'MapDrive' },
+    { code: '\uE80E', name: 'OpenFile' },
+    { code: '\uE80F', name: 'ClearSelection' },
+    { code: '\uE810', name: 'FontDecrease' },
+    { code: '\uE811', name: 'FontIncrease' },
+    { code: '\uE812', name: 'FontSize' },
+    { code: '\uE813', name: 'CellPhone' },
+    { code: '\uE814', name: 'ReShare' },
+    { code: '\uE815', name: 'Tag' },
+    { code: '\uE816', name: 'RepeatOne' },
+    { code: '\uE817', name: 'RepeatAll' },
+    { code: '\uE818', name: 'OutlineStar' },
+    { code: '\uE819', name: 'SolidStar' },
+    { code: '\uE81A', name: 'Calculator' },
+    { code: '\uE81B', name: 'Directions' },
+    { code: '\uE81C', name: 'Target' },
+    { code: '\uE81D', name: 'Library' },
+    { code: '\uE81E', name: 'PhoneBook2' },
+    { code: '\uE81F', name: 'Memo2' },
+    { code: '\uE820', name: 'Microphone2' },
+    { code: '\uE821', name: 'PostUpdate' },
+    { code: '\uE822', name: 'BackToWindow' },
+    { code: '\uE823', name: 'FullScreen' },
+    { code: '\uE824', name: 'NewFolder' },
+    { code: '\uE825', name: 'CalendarReply' },
+    { code: '\uE826', name: 'UnsyncFolder' },
+    { code: '\uE827', name: 'SyncFolder' },
+    { code: '\uE828', name: 'BlockContact2' },
+    { code: '\uE829', name: 'SwitchApps' },
+    { code: '\uE82A', name: 'AddFriend2' },
+    { code: '\uE82B', name: 'TouchPointer3' },
+    { code: '\uE82C', name: 'GoToStart2' },
+    { code: '\uE82D', name: 'ZeroBars2' },
+    { code: '\uE82E', name: 'StopSlideshow' },
+    { code: '\uE82F', name: 'Permissions' },
+    { code: '\uE830', name: 'Highlight' },
+    { code: '\uE831', name: 'DisableUpdates' },
+    { code: '\uE832', name: 'UnfavoriteStarFill' },
+    { code: '\uE833', name: 'Italic' },
+    { code: '\uE834', name: 'Underline' },
+    { code: '\uE835', name: 'Bold' },
+    { code: '\uE836', name: 'MoveToFolder' },
+    { code: '\uE837', name: 'LikeDislike' },
+    { code: '\uE838', name: 'Dislike' },
+    { code: '\uE839', name: 'Like' },
+    { code: '\uE83A', name: 'AlignRight' },
+    { code: '\uE83B', name: 'AlignCenter' },
+    { code: '\uE83C', name: 'AlignLeft' },
+    { code: '\uE83D', name: 'Zoom2' },
+    { code: '\uE83E', name: 'ZoomOut2' },
+    { code: '\uE83F', name: 'OpenWith' },
+    { code: '\uE840', name: 'Rotate' },
+    { code: '\uE841', name: 'Shuffle' },
+    { code: '\uE842', name: 'Movies' },
+    { code: '\uE843', name: 'SelectAll2' },
+    { code: '\uE844', name: 'Orientation2' },
+    { code: '\uE845', name: 'Import2' },
+    { code: '\uE846', name: 'Folder' },
+    { code: '\uE847', name: 'Picture' },
+    { code: '\uE848', name: 'Caption' },
+    { code: '\uE849', name: 'ChromeBackMirrored' },
+    { code: '\uE84A', name: 'ChromeForwardMirrored' },
+    { code: '\uE84B', name: 'ChromeBackMirrored2' },
+    { code: '\uE84C', name: 'ChromeForwardMirrored2' },
+    { code: '\uE84D', name: 'Trim2' },
+    { code: '\uE84E', name: 'AttachCamera' },
+    { code: '\uE84F', name: 'ZoomIn' },
+    { code: '\uE850', name: 'Bookmarks' },
+    { code: '\uE851', name: 'Document' },
+    { code: '\uE852', name: 'ProtectedDocument' },
+    { code: '\uE853', name: 'OpenInNewWindow' },
+    { code: '\uE854', name: 'MailFill' },
+    { code: '\uE855', name: 'ViewAll' },
+    { code: '\uE856', name: 'VideoChat' },
+    { code: '\uE857', name: 'Switch' },
+    { code: '\uE858', name: 'Rename' },
+    { code: '\uE859', name: 'Go' },
+    { code: '\uE85A', name: 'SurfaceHub' },
+    { code: '\uE85B', name: 'Remote' },
+    { code: '\uE85C', name: 'Click' },
+    { code: '\uE85D', name: 'Shuffle2' },
+    { code: '\uE85E', name: 'Movies2' },
+    { code: '\uE85F', name: 'SelectAll3' },
+    { code: '\uE860', name: 'Orientation3' },
+    { code: '\uE861', name: 'Import3' },
+    { code: '\uE862', name: 'Folder2' },
+    { code: '\uE863', name: 'Picture2' },
+    { code: '\uE864', name: 'Caption2' },
+    { code: '\uE865', name: 'Trim3' },
+    { code: '\uE866', name: 'AttachCamera2' },
+    { code: '\uE867', name: 'ZoomIn2' },
+    { code: '\uE868', name: 'Bookmarks2' },
+    { code: '\uE869', name: 'Document2' },
+    { code: '\uE86A', name: 'ProtectedDocument2' },
+    { code: '\uE86B', name: 'Page' },
+    { code: '\uE86C', name: 'Bullets' },
+    { code: '\uE86D', name: 'Comment2' },
+    { code: '\uE86E', name: 'MailReply2' },
+    { code: '\uE86F', name: 'Undo' },
+    { code: '\uE870', name: 'Redo' },
+    { code: '\uE871', name: 'BookmarksMirrored' },
+    { code: '\uE872', name: 'Bullseye' },
+    { code: '\uE873', name: 'NUIFace' },
+    { code: '\uE874', name: 'CalendarMirrored' },
+    { code: '\uE875', name: 'ChevronUpSmall' },
+    { code: '\uE876', name: 'ChevronDownSmall' },
+    { code: '\uE877', name: 'ChevronLeftSmall' },
+    { code: '\uE878', name: 'ChevronRightSmall' },
+    { code: '\uE879', name: 'ChevronUpMed' },
+    { code: '\uE87A', name: 'ChevronDownMed' },
+    { code: '\uE87B', name: 'ChevronLeftMed' },
+    { code: '\uE87C', name: 'ChevronRightMed' },
+    { code: '\uE87D', name: 'Devices2' },
+    { code: '\uE87E', name: 'PC1' },
+    { code: '\uE87F', name: 'PresenceChicklet' },
+    { code: '\uE880', name: 'PresenceChickletVideo' },
+    { code: '\uE881', name: 'Reply' },
+    { code: '\uE882', name: 'HalfStarLeft' },
+    { code: '\uE883', name: 'HalfStarRight' },
+    { code: '\uE884', name: 'CommandPrompt' },
+    { code: '\uE885', name: 'Presentation' },
+    { code: '\uE886', name: 'MultiSelect' },
+    { code: '\uE887', name: 'KeyboardClassic' },
+    { code: '\uE888', name: 'Play' },
+    { code: '\uE889', name: 'Pause' },
+    { code: '\uE88A', name: 'ChevronLeft2' },
+    { code: '\uE88B', name: 'ChevronRight2' },
+    { code: '\uE88C', name: 'InkingToolFill' },
+    { code: '\uE88D', name: 'XBOX' },
+    { code: '\uE88E', name: 'Trackers' },
+    { code: '\uE88F', name: 'Nav2DMapView' },
+    { code: '\uE890', name: 'StreetsideSplitMinimize' },
+    { code: '\uE891', name: 'StreetsideSplitExpand' },
+    { code: '\uE892', name: 'Car2' },
+    { code: '\uE893', name: 'Walk2' },
+    { code: '\uE894', name: 'Bus3' },
+    { code: '\uE895', name: 'TiltUp' },
+    { code: '\uE896', name: 'TiltDown' },
+    { code: '\uE897', name: 'CallForwarding' },
+    { code: '\uE898', name: 'RotateCamera' },
+    { code: '\uE899', name: 'Home' },
+    { code: '\uE89A', name: 'ParkingLocation' },
+    { code: '\uE89B', name: 'MapCompassTop' },
+    { code: '\uE89C', name: 'MapCompassBottom' },
+    { code: '\uE89D', name: 'IncidentTriangle' },
+    { code: '\uE89E', name: 'Touch' },
+    { code: '\uE89F', name: 'MapDirections' },
+    { code: '\uE8A0', name: 'StartPoint' },
+    { code: '\uE8A1', name: 'StopPoint' },
+    { code: '\uE8A2', name: 'EndPoint' },
+    { code: '\uE8A3', name: 'History' },
+    { code: '\uE8A4', name: 'Location' },
+    { code: '\uE8A5', name: 'MapLayers' },
+    { code: '\uE8A6', name: 'Accident' },
+    { code: '\uE8A7', name: 'Work' },
+    { code: '\uE8A8', name: 'Construction' },
+    { code: '\uE8A9', name: 'Recent' },
+    { code: '\uE8AA', name: 'Bank' },
+    { code: '\uE8AB', name: 'DownloadMap' },
+    { code: '\uE8AC', name: 'InkingToolFill2' },
+    { code: '\uE8AD', name: 'HighlightFill' },
+    { code: '\uE8AE', name: 'EraseToolFill' },
+    { code: '\uE8AF', name: 'EraseToolFill2' },
+    { code: '\uE8B0', name: 'Dictionary' },
+    { code: '\uE8B1', name: 'DictionaryAdd' },
+    { code: '\uE8B2', name: 'ToolTip' },
+    { code: '\uE8B3', name: 'ChromeBack2' },
+    { code: '\uE8B4', name: 'ProvisioningPackage' },
+    { code: '\uE8B5', name: 'AddRemoteDevice' },
+    { code: '\uE8B6', name: 'FolderOpen' },
+    { code: '\uE8B7', name: 'Ethernet' },
+    { code: '\uE8B8', name: 'ShareBroadband' },
+    { code: '\uE8B9', name: 'DirectAccess' },
+    { code: '\uE8BA', name: 'DialUp' },
+    { code: '\uE8BB', name: 'DefenderApp' },
+    { code: '\uE8BC', name: 'BatteryCharging11' },
+    { code: '\uE8BD', name: 'Battery11' },
+    { code: '\uE8BE', name: 'Trackers2' },
+    { code: '\uE8BF', name: 'AddSurfaceHub' },
+    { code: '\uE8C0', name: 'DevUpdate' },
+    { code: '\uE8C1', name: 'Unit' },
+    { code: '\uE8C2', name: 'AddTo' },
+    { code: '\uE8C3', name: 'RemoveFrom' },
+    { code: '\uE8C4', name: 'RadioBtnOff' },
+    { code: '\uE8C5', name: 'RadioBtnOn' },
+    { code: '\uE8C6', name: 'RadioBullet' },
+    { code: '\uE8C7', name: 'ExploreContent' },
+    { code: '\uE8C8', name: 'ScrollMode' },
+    { code: '\uE8C9', name: 'ZoomMode' },
+    { code: '\uE8CA', name: 'PanMode' },
+    { code: '\uE8CB', name: 'WiredUSB' },
+    { code: '\uE8CC', name: 'WirelessUSB' },
+    { code: '\uE8CD', name: 'USBSafeConnect' },
+    { code: '\uE8CE', name: 'ActionCenterNotification' },
+    { code: '\uE8CF', name: 'ResetDevice' },
+    { code: '\uE8D0', name: 'Feedback' },
+    { code: '\uE8D1', name: 'Subtitles' },
+    { code: '\uE8D2', name: 'SubtitlesAudio' },
+    { code: '\uE8D3', name: 'OpenFolderHorizontal' },
+    { code: '\uE8D4', name: 'CalendarDay' },
+    { code: '\uE8D5', name: 'CalendarWeek' },
+    { code: '\uE8D6', name: 'Characters' },
+    { code: '\uE8D7', name: 'MailReplyAll' },
+    { code: '\uE8D8', name: 'Read' },
+    { code: '\uE8D9', name: 'ShowBcc' },
+    { code: '\uE8DA', name: 'HideBcc' },
+    { code: '\uE8DB', name: 'Cut2' },
+    { code: '\uE8DC', name: 'PaymentCard' },
+    { code: '\uE8DD', name: 'Copy2' },
+    { code: '\uE8DE', name: 'Important2' },
+    { code: '\uE8DF', name: 'MailReply3' },
+    { code: '\uE8E0', name: 'Sort2' },
+    { code: '\uE8E1', name: 'MobileTablet2' },
+    { code: '\uE8E2', name: 'DisconnectDrive2' },
+    { code: '\uE8E3', name: 'MapDrive2' },
+    { code: '\uE8E4', name: 'OpenFile2' },
+    { code: '\uE8E5', name: 'ClearSelection2' },
+    { code: '\uE8E6', name: 'FontDecrease2' },
+    { code: '\uE8E7', name: 'FontIncrease2' },
+    { code: '\uE8E8', name: 'FontSize2' },
+    { code: '\uE8E9', name: 'CellPhone2' },
+    { code: '\uE8EA', name: 'ReShare2' },
+    { code: '\uE8EB', name: 'Tag2' },
+    { code: '\uE8EC', name: 'RepeatOne2' },
+    { code: '\uE8ED', name: 'RepeatAll2' },
+    { code: '\uE8EE', name: 'Calculator2' },
+    { code: '\uE8EF', name: 'Directions2' },
+    { code: '\uE8F0', name: 'Library2' },
+    { code: '\uE8F1', name: 'ChatBubbles' },
+    { code: '\uE8F2', name: 'PostUpdate2' },
+    { code: '\uE8F3', name: 'NewWindow3' },
+    { code: '\uE8F4', name: 'SaveLocal2' },
+    { code: '\uE8F5', name: 'Color2' },
+    { code: '\uE8F6', name: 'DataSense2' },
+    { code: '\uE8F7', name: 'SaveAs2' },
+    { code: '\uE8F8', name: 'Light2' },
+    { code: '\uE8F9', name: 'Effects2' },
+    { code: '\uE8FA', name: 'Microphone3' },
+    { code: '\uE8FB', name: 'Feedback2' },
+    { code: '\uE8FC', name: 'Subtitles2' },
+    { code: '\uE8FD', name: 'SubtitlesAudio2' },
+    { code: '\uE8FE', name: 'OpenFolderHorizontal2' },
+    { code: '\uE8FF', name: 'CalendarDay2' },
+  ];
+
+  const iconCard = (glyph, name, font) => `
+    <div class="icon-card group relative flex flex-col items-center justify-center gap-1 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 cursor-pointer transition-colors border border-transparent hover:border-gray-600"
+         title="${esc(name)} (${esc(font)})"
+         onclick="navigator.clipboard.writeText('${esc(glyph)}').then(()=>{ const t=this.querySelector('.icon-copied'); if(t){t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),1000);} })">
+      <span class="text-2xl leading-none" style="font-family:'${esc(font)}',sans-serif">${glyph}</span>
+      <span class="text-[9px] text-gray-500 text-center leading-tight w-full truncate px-0.5">${esc(name)}</span>
+      <span class="icon-copied hidden absolute inset-0 flex items-center justify-center bg-blue-600 bg-opacity-90 rounded-lg text-white text-[10px] font-semibold">Copied!</span>
+    </div>
+  `;
+
+  return `
+    <div class="p-4 overflow-y-auto h-full space-y-6">
+
+      <div class="text-xs text-gray-500 bg-gray-800 rounded-lg px-3 py-2 border border-gray-700 flex items-center gap-2">
+        <span style="font-family:'Segoe MDL2 Assets',sans-serif">&#xE82F;</span>
+        Click any icon to copy it to clipboard. Segoe MDL2 Assets is built into Windows 10/11 — no external libraries needed.
+      </div>
+
+      <!-- Segoe MDL2 Assets -->
+      <section>
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+          Segoe MDL2 Assets
+          <span class="ml-2 text-gray-600 font-normal normal-case">${mdl2Icons.length} icons · Windows 10/11 built-in</span>
+        </h2>
+        <div class="grid gap-1" style="grid-template-columns: repeat(auto-fill, minmax(72px, 1fr))">
+          ${mdl2Icons.map(i => iconCard(i.code, i.name, 'Segoe MDL2 Assets')).join('')}
+        </div>
+      </section>
 
     </div>
   `;
@@ -1027,6 +1581,14 @@ function renderConditionRow(condition, index, total) {
 
 // ─── Settings Event Listeners ─────────────────────────────────────────────────
 function attachListeners() {
+  // Title bar window controls
+  document.getElementById('btn-titlebar-minimize')?.addEventListener('click', () => {
+    Runtime.WindowMinimise();
+  });
+  document.getElementById('btn-titlebar-close')?.addEventListener('click', () => {
+    Runtime.Quit();
+  });
+
   // Tab switching
   document.querySelectorAll('[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1106,8 +1668,8 @@ function attachListeners() {
     if (!confirm('Delete this rule?')) return;
     try {
       await App.DeleteRule(id);
-      state.rules = await App.GetRules();
-      state.validations = await App.ValidateRules().catch(() => []);
+      state.rules = (await App.GetRules()) || [];
+      state.validations = (await App.ValidateRules().catch(() => [])) || [];
       render();
       showToast('Rule deleted', 'success');
     } catch (e) { showToast('Delete failed: ' + e, 'error'); }
@@ -1176,53 +1738,6 @@ function attachListeners() {
     } catch (e) { showToast('Save failed: ' + e, 'error'); }
   });
 
-  const btnPreviewPrompt = document.getElementById('btn-preview-prompt');
-  if (btnPreviewPrompt) btnPreviewPrompt.addEventListener('click', () => {
-    // Show a preview of the chooser using current settings and real browser list
-    const cs = state.config.chooserSettings || { iconSize: 'large', showBrowserNames: true, showURL: true };
-    showChooserPreview(cs);
-  });
-}
-
-// ─── Chooser Preview (in settings mode) ──────────────────────────────────────
-function showChooserPreview(settings) {
-  // Save current state
-  const prevMode = state.mode;
-  const prevChooserData = state.chooserData;
-  const prevChooserSettings = state.chooserSettings;
-
-  // Set up preview data
-  state.mode = 'chooser';
-  state.chooserData = {
-    url: 'https://example.com/some/page?ref=preview',
-    domain: 'example.com',
-    reason: 'no_rule',
-    warning: '',
-    browsers: state.browsers,
-  };
-  state.chooserSettings = settings;
-  state.selectedBrowserIndex = 0;
-  state.alwaysUse = false;
-
-  // Render chooser over settings
-  const appEl = document.getElementById('app');
-  const prevHTML = appEl.innerHTML;
-
-  renderChooserMode();
-
-  // Override cancel to restore settings
-  const cancelBtn = document.getElementById('btn-chooser-cancel');
-  const openBtn = document.getElementById('btn-chooser-open');
-
-  const restoreSettings = () => {
-    state.mode = prevMode;
-    state.chooserData = prevChooserData;
-    state.chooserSettings = prevChooserSettings;
-    render();
-  };
-
-  if (cancelBtn) cancelBtn.addEventListener('click', restoreSettings, { once: true });
-  if (openBtn) openBtn.addEventListener('click', restoreSettings, { once: true });
 }
 
 // ─── Rule Editor Listeners ────────────────────────────────────────────────────
@@ -1327,7 +1842,7 @@ function attachRuleEditorListeners() {
 
     try {
       await App.SaveRule(rule);
-      state.rules = await App.GetRules();
+      state.rules = (await App.GetRules()) || [];
       state.validations = await App.ValidateRules().catch(() => []);
       state.editingRule = null;
       render();
@@ -1428,14 +1943,16 @@ function esc(str) {
 }
 
 function getBrowserEmoji(browser) {
+  // All glyphs from Segoe MDL2 Assets — must be wrapped with font-family style at render site
   const name = (browser.name || '').toLowerCase();
-  if (name.includes('chrome'))  return '🟡';
-  if (name.includes('edge'))    return '🔵';
-  if (name.includes('firefox')) return '🦊';
-  if (name.includes('brave'))   return '🦁';
-  if (name.includes('safari'))  return '🧭';
-  if (name.includes('opera'))   return '🔴';
-  return '🌐';
+  const mdl2 = (code) => `<span style="font-family:'Segoe MDL2 Assets',sans-serif">${code}</span>`;
+  if (name.includes('chrome'))  return mdl2('\uE774'); // Slideshow (closest to globe/browser)
+  if (name.includes('edge'))    return mdl2('\uE774');
+  if (name.includes('firefox')) return mdl2('\uE774');
+  if (name.includes('brave'))   return mdl2('\uE774');
+  if (name.includes('safari'))  return mdl2('\uE774');
+  if (name.includes('opera'))   return mdl2('\uE774');
+  return mdl2('\uE774'); // Globe / Slideshow
 }
 
 // Shorten browser name for display in chooser cards

@@ -26,6 +26,10 @@ export function GetChooserSettings() {
   return window['go']['main']['App']['GetChooserSettings']();
 }
 
+export function GetClipboardURL() {
+  return window['go']['main']['App']['GetClipboardURL']();
+}
+
 export function GetConfig() {
   return window['go']['main']['App']['GetConfig']();
 }
@@ -42,6 +46,10 @@ export function GetRules() {
   return window['go']['main']['App']['GetRules']();
 }
 
+export function GetTrayData() {
+  return window['go']['main']['App']['GetTrayData']();
+}
+
 export function IsChooserMode() {
   return window['go']['main']['App']['IsChooserMode']();
 }
@@ -50,12 +58,36 @@ export function IsDevMode() {
   return window['go']['main']['App']['IsDevMode']();
 }
 
+export function IsFirstRun() {
+  return window['go']['main']['App']['IsFirstRun']();
+}
+
+export function IsTrayMode() {
+  return window['go']['main']['App']['IsTrayMode']();
+}
+
+export function LaunchBrowserByName(arg1) {
+  return window['go']['main']['App']['LaunchBrowserByName'](arg1);
+}
+
 export function LookupProtocol(arg1) {
   return window['go']['main']['App']['LookupProtocol'](arg1);
 }
 
+export function MarkFirstRunComplete() {
+  return window['go']['main']['App']['MarkFirstRunComplete']();
+}
+
 export function OpenDefaultAppsSettings() {
   return window['go']['main']['App']['OpenDefaultAppsSettings']();
+}
+
+export function OpenSettings() {
+  return window['go']['main']['App']['OpenSettings']();
+}
+
+export function OpenURLFromClipboard() {
+  return window['go']['main']['App']['OpenURLFromClipboard']();
 }
 
 export function OpenWithBrowser(arg1) {
@@ -64,6 +96,10 @@ export function OpenWithBrowser(arg1) {
 
 export function ProcessURL(arg1) {
   return window['go']['main']['App']['ProcessURL'](arg1);
+}
+
+export function QuitApp() {
+  return window['go']['main']['App']['QuitApp']();
 }
 
 export function RefreshBrowsers() {

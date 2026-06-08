@@ -18,12 +18,13 @@ func DetectBrowsers() []Browser {
 	// Scan HKCU StartMenuInternet (user-installed browsers)
 	browsers = append(browsers, scanStartMenuInternet(registry.CURRENT_USER)...)
 
-	// Deduplicate by path
+	// Deduplicate by path, and exclude LinkRight itself to prevent endless loops
 	seen := map[string]bool{}
 	var unique []Browser
+	exeSelf := strings.ToLower(GetExePath())
 	for _, b := range browsers {
 		key := strings.ToLower(b.Path)
-		if !seen[key] && b.Path != "" {
+		if !seen[key] && b.Path != "" && key != exeSelf {
 			seen[key] = true
 			// Detect profiles
 			b.Profiles = detectProfiles(b)

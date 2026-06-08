@@ -13,6 +13,7 @@ var (
 	procGetClipboardData = user32.NewProc("GetClipboardData")
 	procGlobalLock       = kernel32.NewProc("GlobalLock")
 	procGlobalUnlock     = kernel32.NewProc("GlobalUnlock")
+	procMessageBoxW      = user32.NewProc("MessageBoxW")
 )
 
 const cfUnicodeText = 13

@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "preview:tray": "vite --config vite.config.preview.js",
+    "preview:chooser": "cross-env VITE_PREVIEW_MODE=chooser vite --config vite.config.preview.js",
+    "preview:settings": "cross-env VITE_PREVIEW_MODE=settings vite --config vite.config.preview.js"
   },
   "devDependencies": {
     "vite": "^4.5.0",
