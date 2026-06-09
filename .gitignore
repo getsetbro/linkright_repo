@@ -1,1 +1,7 @@
 build_output.txt
+
+# Installer output (distributed via GitHub Releases)
+LinkRight/installer/output/
+
+# Build artifacts
+LinkRight/LinkRight/build/bin/
