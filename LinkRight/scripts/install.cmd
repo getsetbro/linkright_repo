@@ -36,7 +36,7 @@ if not exist "%SRC_EXE%" (
 set "INSTALL_DIR=%LOCALAPPDATA%\LinkRight"
 set "INSTALL_EXE=%INSTALL_DIR%\LinkRight.exe"
 
-echo [1/5] Creating install folder...
+echo [1/4] Creating install folder...
 if not exist "%INSTALL_DIR%" (
     mkdir "%INSTALL_DIR%"
     echo   Created: %INSTALL_DIR%
@@ -45,7 +45,7 @@ if not exist "%INSTALL_DIR%" (
 )
 
 echo.
-echo [2/5] Copying LinkRight.exe...
+echo [2/4] Copying LinkRight.exe...
 copy /y "%SRC_EXE%" "%INSTALL_EXE%" >nul
 if %errorlevel% neq 0 (
     echo   ERROR: Failed to copy exe. Is it currently running?
@@ -55,7 +55,7 @@ if %errorlevel% neq 0 (
 echo   Copied to: %INSTALL_EXE%
 
 echo.
-echo [3/5] Creating Start Menu shortcut...
+echo [3/4] Creating Start Menu shortcut...
 set "START_MENU=%APPDATA%\Microsoft\Windows\Start Menu\Programs"
 set "LNK_PATH=%START_MENU%\Link Right.lnk"
 powershell -NoProfile -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut(\"%LNK_PATH%\"); $s.TargetPath = \"%INSTALL_EXE%\"; $s.Description = \"Route every link to the right browser\"; $s.Save()" >nul 2>&1
@@ -66,20 +66,7 @@ if "%errorlevel%"=="0" (
 )
 
 echo.
-echo [4/5] Creating Startup tray shortcut...
-set "STARTUP_DIR=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
-set "TRAY_LNK=%STARTUP_DIR%\Link Right (Tray).lnk"
-powershell -NoProfile -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut(\"%TRAY_LNK%\"); $s.TargetPath = \"%INSTALL_EXE%\"; $s.Arguments = \"--tray\"; $s.Description = \"Link Right system tray\"; $s.Save()" >nul 2>&1
-if %errorlevel% neq 0 goto :tray_shortcut_failed
-echo   Created startup tray shortcut.
-echo   Link Right tray will start automatically with Windows.
-goto :tray_shortcut_done
-:tray_shortcut_failed
-echo   Warning: Could not create Startup shortcut (non-fatal).
-:tray_shortcut_done
-
-echo.
-echo [5/5] Launching Link Right to register as a browser...
+echo [4/4] Launching Link Right to register as a browser...
 start "" "%INSTALL_EXE%"
 echo   Launched. Link Right will register itself on first run.
 
