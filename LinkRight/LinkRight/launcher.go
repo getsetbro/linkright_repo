@@ -17,6 +17,7 @@ func LaunchBrowser(browserPath, profileID, url string) error {
 
 	args := buildLaunchArgs(browserPath, profileID, url)
 	cmd := exec.Command(browserPath, args...)
+	hideWindow(cmd)
 	return cmd.Start()
 }
 

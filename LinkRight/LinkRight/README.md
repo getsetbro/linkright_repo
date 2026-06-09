@@ -12,7 +12,6 @@ Link Right is a lightweight Windows utility that sits between Windows and your b
 - **Browser & profile detection** — automatically finds Chrome, Edge, Brave, Firefox and all their profiles
 - **Chooser popup** — when no rule matches, a fast picker lets you choose and optionally save a rule
 - **Protocol handler support** — route `figma://`, `msteams://`, `slack://` and other deep links
-- **System tray** — quick access to open clipboard URLs in any browser
 - **No admin required** — per-user install, no elevated permissions needed
 - **No telemetry** — your data never leaves your machine
 
@@ -38,7 +37,7 @@ Link Right is a lightweight Windows utility that sits between Windows and your b
 
 ## Setting Up Rules
 
-1. Open Link Right (double-click the exe or click **Settings…** in the tray popup)
+1. Open Link Right (double-click the exe)
 2. Go to the **Rules** tab
 3. Click **+** to add a rule:
    - **Title** — a friendly name for the rule
@@ -64,21 +63,6 @@ When no rule matches a link, Link Right shows a quick browser picker:
 - Click a browser (or profile) to open the link
 - Check **"Always use this for [domain]"** to automatically create a rule for next time
 - Press **Escape** or click outside to cancel
-
----
-
-## System Tray
-
-Link Right can run in the system tray for quick access:
-
-- Launch with the `--tray` flag: `LinkRight.exe --tray`
-- Click the tray icon to open the popup
-- Open a URL from your clipboard in any browser with one click
-- Press **1–9** to instantly open the clipboard URL in the corresponding browser
-- Click **Settings…** to open the full settings window
-
-To have the tray start automatically with Windows, add a shortcut to:
-`%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\`
 
 ---
 
@@ -127,7 +111,6 @@ No admin rights required. Your PC will be left in the exact state it was before 
 |------|-------------|
 | *(no args)* | Open settings UI |
 | `http://...` or `https://...` | Route a URL through rules (used by Windows when Link Right is the default browser) |
-| `--tray` | Open the compact tray popup |
 | `--uninstall` | Run the uninstaller |
 | `--dev` | Skip auto-registration (for development/testing) |
 

@@ -1,0 +1,6 @@
+{
+  "go.buildTags": "desktop",
+  "go.toolsEnvVars": {
+    "GOFLAGS": "-tags=desktop"
+  }
+}

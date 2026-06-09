@@ -8,7 +8,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // without the Wails/Go runtime.
 //
 // Usage:
-//   npm run preview:tray      → tray mode  (320×480)
 //   npm run preview:chooser   → chooser mode
 //   npm run preview:settings  → settings mode
 //

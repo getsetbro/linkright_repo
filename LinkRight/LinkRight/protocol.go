@@ -134,6 +134,7 @@ func LaunchProtocolURL(rawURL string) error {
 	}
 
 	cmd := exec.Command(exePath, args...)
+	hideWindow(cmd)
 	return cmd.Start()
 }
 

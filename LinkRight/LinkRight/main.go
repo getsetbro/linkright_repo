@@ -61,12 +61,14 @@ func main() {
 	frameless := true
 	alwaysOnTop := false
 	resizable := true
+	startHidden := false
 	title := "Link Right"
 
 	if chooserMode {
-		width, height = 520, 380
-		minWidth, minHeight = 520, 380
+		width, height = 580, 620
+		minWidth, minHeight = 520, 500
 		title = "Linker"
+		startHidden = true // Hide window until we know if picker is needed
 	}
 
 	err := wails.Run(&options.App{
@@ -78,18 +80,19 @@ func main() {
 		Frameless:     frameless,
 		AlwaysOnTop:   alwaysOnTop,
 		DisableResize: !resizable,
+		StartHidden:   startHidden,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		BackgroundColour: &options.RGBA{R: 13, G: 13, B: 31, A: 255},
+		BackgroundColour: &options.RGBA{R: 13, G: 13, B: 31, A: 0},
 		OnStartup:        app.startup,
 		OnDomReady:       app.domReady,
 		Bind: []interface{}{
 			app,
 		},
 		Windows: &windows.Options{
-			WebviewIsTransparent: false,
-			WindowIsTranslucent:  false,
+			WebviewIsTransparent: true,
+			WindowIsTranslucent:  true,
 		},
 	})
 	if err != nil {

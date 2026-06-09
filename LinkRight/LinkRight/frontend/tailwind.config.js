@@ -40,7 +40,7 @@ export default {
         'text': {
           primary:   '#f0eeff',   // near-white with a hint of lavender
           secondary: '#9b8ec4',   // muted purple-gray
-          muted:     '#5c5490',   // dimmed — placeholders, disabled
+          muted:     '#9484c0',   // dimmed — placeholders, disabled (WCAG AA on dark surfaces)
           inverse:   '#ffffff',
         },
 

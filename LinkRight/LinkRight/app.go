@@ -30,7 +30,7 @@ func (a *App) startup(ctx context.Context) {
 	a.config = LoadConfig()
 	a.browsers = applyArchivedState(DetectBrowsers(), a.config.ArchivedBrowserPaths)
 
-	// First-run: auto-register as a browser (skip in dev mode and tray/picker modes)
+	// First-run: auto-register as a browser (skip in dev mode and picker modes)
 	if !a.devMode && a.GetCurrentURL() == "" {
 		if a.config.FirstRun || !IsRegistered() {
 			_ = RegisterApp()
@@ -388,16 +388,16 @@ func (a *App) OpenWithBrowser(resp PickerResponse) error {
 		} else {
 			domain := ExtractDomain(url)
 			rule := Rule{
-				Name:        domain,
-				Pattern:     domain,
-				MatchType:   "domain",
-				Conditions:  []Condition{{Field: "host", Operator: "contains", Value: domain}},
+				Name:           domain,
+				Pattern:        domain,
+				MatchType:      "contains",
+				Conditions:     []Condition{{Field: "url", Operator: "contains", Value: domain}},
 				ConditionLogic: "all",
-				Browser:     resp.BrowserName,
-				BrowserPath: resp.BrowserPath,
-				Profile:     resp.Profile,
-				ProfileName: resp.ProfileName,
-				Enabled:     true,
+				Browser:        resp.BrowserName,
+				BrowserPath:    resp.BrowserPath,
+				Profile:        resp.Profile,
+				ProfileName:    resp.ProfileName,
+				Enabled:        true,
 			}
 			_ = AddRule(&a.config, rule)
 		}
@@ -428,6 +428,8 @@ func (a *App) GetProtocolApps() []ProtocolApp {
 // lets the OS decide which application to open it with. This is the last-
 // resort fallback when no browser or protocol handler could be found.
 func launchWithOS(url string) error {
-	return exec.Command("cmd", "/c", "start", "", url).Start()
+	cmd := exec.Command("cmd", "/c", "start", "", url)
+	hideWindow(cmd)
+	return cmd.Start()
 }
 

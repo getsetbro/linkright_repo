@@ -79,7 +79,6 @@ func AddRule(cfg *Config, rule Rule) error {
 	if rule.Priority == 0 {
 		rule.Priority = len(cfg.Rules) + 1
 	}
-	rule.Enabled = true
 	cfg.Rules = append(cfg.Rules, rule)
 	sortRules(cfg.Rules)
 	return SaveConfig(*cfg)

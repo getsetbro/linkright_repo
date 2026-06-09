@@ -24,6 +24,16 @@ if exist "%APPDATA%\LinkRight\config.json" (
     echo   Not found, skipping.
 )
 
+echo [5/5] Removing Start Menu shortcuts...
+set "SM=%APPDATA%\Microsoft\Windows\Start Menu\Programs"
+set "found=0"
+if exist "%SM%\Link Right.lnk" (del /f /q "%SM%\Link Right.lnk" & set "found=1")
+if exist "%SM%\LinkRight.lnk" (del /f /q "%SM%\LinkRight.lnk" & set "found=1")
+if exist "%SM%\Link Right\Link Right.lnk" (del /f /q "%SM%\Link Right\Link Right.lnk" & set "found=1")
+if exist "%SM%\Link Right\Uninstall Link Right.lnk" (del /f /q "%SM%\Link Right\Uninstall Link Right.lnk" & set "found=1")
+if exist "%SM%\Link Right\" (rd /q "%SM%\Link Right" 2>nul)
+if "%found%"=="1" (echo   Done.) else (echo   Not found, skipping.)
+
 echo.
 echo ============================================
 echo  Cleanup complete. Link Right is fully

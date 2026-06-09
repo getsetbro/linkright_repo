@@ -18,6 +18,8 @@ func DetectBrowsers() []Browser {
 	browsers = append(browsers, scanStartMenuInternet(registry.LOCAL_MACHINE)...)
 	// Scan HKCU StartMenuInternet (user-installed browsers)
 	browsers = append(browsers, scanStartMenuInternet(registry.CURRENT_USER)...)
+	// Scan for MSIX/AppX browsers (e.g. Arc, DuckDuckGo) that don't register in StartMenuInternet
+	browsers = append(browsers, scanMSIXBrowsers()...)
 
 	// Deduplicate by path, and exclude LinkRight itself to prevent endless loops
 	seen := map[string]bool{}
@@ -25,6 +27,11 @@ func DetectBrowsers() []Browser {
 	exeSelf := strings.ToLower(GetExePath())
 	for _, b := range browsers {
 		key := strings.ToLower(b.Path)
+		nameLower := strings.ToLower(b.Name)
+		// Exclude LinkRight by exe path OR by display name to prevent routing loops
+		if nameLower == "link right" || nameLower == "linkright" {
+			continue
+		}
 		if !seen[key] && b.Path != "" && key != exeSelf {
 			seen[key] = true
 			// Detect profiles
@@ -129,9 +136,12 @@ func detectBrowserType(name, path string) string {
 		strings.Contains(nameLower, "edge") || strings.Contains(pathLower, "edge") ||
 		strings.Contains(nameLower, "brave") || strings.Contains(pathLower, "brave") ||
 		strings.Contains(nameLower, "opera") || strings.Contains(pathLower, "opera") ||
-		strings.Contains(nameLower, "vivaldi") || strings.Contains(pathLower, "vivaldi") {
+		strings.Contains(nameLower, "vivaldi") || strings.Contains(pathLower, "vivaldi") ||
+		strings.Contains(pathLower, "thebrowsercompany.arc") || nameLower == "arc" ||
+		strings.HasSuffix(pathLower, "\\arc.exe") || strings.HasSuffix(pathLower, "/arc.exe") {
 		return "chromium"
 	}
+	// DuckDuckGo uses its own engine (WebView2-based), treat as "other"
 	return "other"
 }
 
@@ -312,4 +322,67 @@ func detectFirefoxProfiles() []BrowserProfile {
 	}
 
 	return profiles
+}
+
+// msixBrowserEntry defines a known MSIX/AppX browser to scan for
+type msixBrowserEntry struct {
+	ExeName         string // e.g. "Arc.exe"
+	DisplayName     string // e.g. "Arc"
+	PackageFamilyID string // e.g. "TheBrowserCompany.Arc_ttt1ap7aakyb4"
+	BrowserType     string // "chromium", "firefox", "other"
+}
+
+// knownMSIXBrowsers is the list of known MSIX-packaged browsers that don't
+// register in SOFTWARE\Clients\StartMenuInternet
+var knownMSIXBrowsers = []msixBrowserEntry{
+	{
+		ExeName:         "Arc.exe",
+		DisplayName:     "Arc",
+		PackageFamilyID: "TheBrowserCompany.Arc_ttt1ap7aakyb4",
+		BrowserType:     "chromium",
+	},
+	{
+		ExeName:         "DuckDuckGo.exe",
+		DisplayName:     "DuckDuckGo",
+		PackageFamilyID: "DuckDuckGo.DesktopBrowser_ya2fgkz3nks94",
+		BrowserType:     "other",
+	},
+}
+
+// scanMSIXBrowsers detects MSIX/AppX-packaged browsers by looking for their
+// App Execution Alias stubs in %LOCALAPPDATA%\Microsoft\WindowsApps
+func scanMSIXBrowsers() []Browser {
+	var browsers []Browser
+
+	localAppData := os.Getenv("LOCALAPPDATA")
+	if localAppData == "" {
+		return browsers
+	}
+
+	windowsAppsDir := filepath.Join(localAppData, "Microsoft", "WindowsApps")
+
+	for _, entry := range knownMSIXBrowsers {
+		// Check the package-specific subdirectory first (more reliable)
+		exePath := filepath.Join(windowsAppsDir, entry.PackageFamilyID, entry.ExeName)
+		if _, err := os.Stat(exePath); err == nil {
+			browsers = append(browsers, Browser{
+				Name: entry.DisplayName,
+				Path: exePath,
+				Type: entry.BrowserType,
+			})
+			continue
+		}
+
+		// Fall back to the top-level WindowsApps alias
+		exePath = filepath.Join(windowsAppsDir, entry.ExeName)
+		if _, err := os.Stat(exePath); err == nil {
+			browsers = append(browsers, Browser{
+				Name: entry.DisplayName,
+				Path: exePath,
+				Type: entry.BrowserType,
+			})
+		}
+	}
+
+	return browsers
 }
