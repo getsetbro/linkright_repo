@@ -6,7 +6,7 @@ Link Right is a lightweight Windows utility that intercepts link clicks and rout
 
 ## Download
 
-Grab the latest **LinkRight_Setup.zip** from [GitHub Releases](https://github.com/getsetbro/linkright_repo/releases), unzip, and run the installer. No admin required.
+Grab the latest **LinkRight_Setup.exe** from [GitHub Releases](https://github.com/getsetbro/linkright_repo/releases) and run it. No admin required.
 
 ### ⚠️ "Windows protected your PC" warning
 
