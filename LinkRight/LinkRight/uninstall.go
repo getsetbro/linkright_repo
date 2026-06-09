@@ -2,11 +2,18 @@ package main
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
+	"syscall"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
+)
+
+var (
+	user32          = syscall.NewLazyDLL("user32.dll")
+	procMessageBoxW = user32.NewProc("MessageBoxW")
 )
 
 const (
@@ -31,62 +38,59 @@ func messageBox(title, text string, flags uint32) int32 {
 	return int32(ret)
 }
 
-// RunUninstall performs the full uninstall flow:
-//  1. Confirm with the user
+// RunUninstall performs the full uninstall flow silently (no dialogs):
+//  1. Close any running Link Right settings/picker windows
 //  2. Remove all registry entries
 //  3. Delete %APPDATA%\LinkRight\ directory
 //  4. Remove Start Menu shortcuts
-//  5. Show completion message
+//
+// This is called by the Inno Setup uninstaller which already shows its own
+// confirmation dialog, so no additional prompts are needed.
 func RunUninstall() {
-	const appTitle = "Link Right Uninstaller"
+	// Close any running Link Right instances before cleaning up.
+	// We use taskkill to terminate all LinkRight.exe processes except the
+	// current one (the --uninstall invocation itself).
+	closeRunningInstances()
 
-	// Step 1: Confirm
-	result := messageBox(
-		appTitle,
-		"This will completely remove Link Right from your user account.\n\n"+
-			"• All registry entries will be deleted\n"+
-			"• Your rules and settings will be deleted\n"+
-			"• Start Menu shortcuts will be removed\n\n"+
-			"Are you sure you want to uninstall Link Right?",
-		mbOKCancel|mbIconQuestion,
-	)
-	if result != idOK {
-		// User cancelled
-		return
-	}
-
-	var errors []string
-
-	// Step 2: Remove registry entries
-	if err := uninstallRegistry(); err != nil {
-		errors = append(errors, "Registry cleanup: "+err.Error())
-	}
-
-	// Step 3: Delete %APPDATA%\LinkRight\ directory
-	if err := uninstallConfigDir(); err != nil {
-		errors = append(errors, "Config directory: "+err.Error())
-	}
-
-	// Step 4: Remove Start Menu shortcuts
+	// Silently clean up registry entries, config directory, and shortcuts.
+	// Errors are intentionally ignored — best-effort cleanup.
+	_ = uninstallRegistry()
+	_ = uninstallConfigDir()
 	uninstallShortcuts()
+}
 
-	// Step 5: Show result
-	if len(errors) > 0 {
-		msg := "Link Right has been mostly uninstalled, but some items could not be removed:\n\n"
-		for _, e := range errors {
-			msg += "• " + e + "\n"
-		}
-		msg += "\nYou may need to remove these manually."
-		messageBox(appTitle, msg, mbOKCancel|mbIconWarning)
-	} else {
-		messageBox(
-			appTitle,
-			"Link Right has been successfully uninstalled.\n\n"+
-				"Your PC has been restored to its previous state.\n"+
-				"You can now delete LinkRight.exe.",
-			mbOK|mbIconInformation,
-		)
+// closeRunningInstances terminates any running LinkRight.exe processes that
+// are not the current uninstall process. Uses taskkill /F /FI to filter by
+// image name while excluding the current PID.
+func closeRunningInstances() {
+	currentPID := os.Getpid()
+
+	// taskkill /F /IM LinkRight.exe /FI "PID ne <currentPID>"
+	// This forcefully kills all LinkRight.exe processes except this one.
+	cmd := exec.Command("taskkill", "/F", "/IM", "LinkRight.exe",
+		"/FI", "PID ne "+itoa(currentPID))
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	_ = cmd.Run() // ignore errors — process may not be running
+}
+
+// itoa converts an int to its decimal string representation without importing strconv.
+func itoa(n int) string {
+	if n == 0 {
+		return "0"
 	}
+	neg := n < 0
+	if neg {
+		n = -n
+	}
+	buf := make([]byte, 0, 20)
+	for n > 0 {
+		buf = append([]byte{byte('0' + n%10)}, buf...)
+		n /= 10
+	}
+	if neg {
+		buf = append([]byte{'-'}, buf...)
+	}
+	return string(buf)
 }
 
 // uninstallRegistry removes all HKCU registry entries written by Link Right.
@@ -114,22 +118,9 @@ func uninstallRegistry() error {
 		k.Close()
 	}
 
-	// Remove any UserChoice entries that point to LinkRight (best-effort)
-	for _, scheme := range []string{"http", "https"} {
-		keyPath := `SOFTWARE\Microsoft\Windows\Shell\Associations\UrlAssociations\` + scheme + `\UserChoice`
-		k2, err2 := registry.OpenKey(registry.CURRENT_USER, keyPath, registry.READ)
-		if err2 == nil {
-			progID, _, _ := k2.GetStringValue("ProgId")
-			k2.Close()
-			// Only clear if it's still pointing at us — Windows protects this key,
-			// so we attempt but don't fail if it can't be changed.
-			if progID == urlClassName {
-				// Windows 10/11 protects UserChoice; we can't reliably delete it,
-				// but we can open Default Apps for the user to reassign manually.
-				_ = OpenDefaultAppsSettings()
-			}
-		}
-	}
+	// Note: Windows 10/11 protects UserChoice keys for http/https and does not
+	// allow them to be deleted programmatically. The user will need to reassign
+	// their default browser via Windows Settings > Apps > Default Apps.
 
 	return nil
 }

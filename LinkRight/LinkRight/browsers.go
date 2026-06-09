@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"golang.org/x/sys/windows/registry"
@@ -34,6 +35,10 @@ func DetectBrowsers() []Browser {
 			unique = append(unique, b)
 		}
 	}
+
+	sort.Slice(unique, func(i, j int) bool {
+		return strings.ToLower(unique[i].Name) < strings.ToLower(unique[j].Name)
+	})
 
 	return unique
 }

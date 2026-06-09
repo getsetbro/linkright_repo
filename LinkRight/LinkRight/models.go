@@ -35,7 +35,8 @@ type Browser struct {
 	Path     string           `json:"path"`
 	IconPath string           `json:"iconPath"`
 	Profiles []BrowserProfile `json:"profiles"`
-	Type     string           `json:"type"` // "chromium", "firefox", "other"
+	Type     string           `json:"type"`     // "chromium", "firefox", "other"
+	Archived bool             `json:"archived"` // true = hidden from picker and rules
 }
 
 // PickerSettings controls the appearance and behavior of the picker popup
@@ -46,13 +47,14 @@ type PickerSettings struct {
 
 // Config is the root configuration stored in JSON
 type Config struct {
-	DefaultBrowser   string          `json:"defaultBrowser"`
-	DefaultProfile   string          `json:"defaultProfile"`
-	FallbackBehavior string         `json:"fallbackBehavior"` // "picker" or "default"
-	Rules            []Rule         `json:"rules"`
-	FirstRun         bool           `json:"firstRun"`
-	PickerSettings   PickerSettings `json:"pickerSettings"`
-	StartWithWindows bool            `json:"startWithWindows"` // create Startup shortcut for tray
+	DefaultBrowser      string          `json:"defaultBrowser"`
+	DefaultProfile      string          `json:"defaultProfile"`
+	FallbackBehavior    string          `json:"fallbackBehavior"`    // "picker" or "default"
+	Rules               []Rule          `json:"rules"`
+	FirstRun            bool            `json:"firstRun"`
+	PickerSettings      PickerSettings  `json:"pickerSettings"`
+	CustomBrowsers      []Browser       `json:"customBrowsers"`      // user-added custom browsers (legacy, kept for compat)
+	ArchivedBrowserPaths []string       `json:"archivedBrowserPaths"` // paths of browsers hidden from picker/rules
 }
 
 // PickerRequest is sent to the frontend when the picker popup is needed
@@ -95,12 +97,4 @@ type ProtocolApp struct {
 	CommandLine string `json:"commandLine"` // full command line including %1 placeholder
 	ExePath     string `json:"exePath"`     // extracted executable path
 	IsAvailable bool   `json:"isAvailable"` // true if the exe exists on disk
-}
-
-// TrayData is returned by GetTrayData() and contains everything the tray
-// popup needs to render in a single round-trip.
-type TrayData struct {
-	Browsers       []Browser `json:"browsers"`
-	DefaultBrowser string    `json:"defaultBrowser"`
-	ClipboardURL   string    `json:"clipboardURL"` // empty string if clipboard has no URL
-}
+}

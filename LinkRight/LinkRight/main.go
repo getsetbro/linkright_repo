@@ -36,11 +36,10 @@ func main() {
 	// Detect launch mode from args
 	urlArg := extractURLArg(args)
 	chooserMode := urlArg != ""
-	trayMode := isTrayMode(args)
 
-	// Single-instance guard: only enforce for settings mode (not chooser or tray).
+	// Single-instance guard: only enforce for settings mode (not chooser mode).
 	// Uses a Windows named mutex so a second settings window cannot be opened.
-	if !chooserMode && !trayMode && !devMode {
+	if !chooserMode && !devMode {
 		const mutexName = "LinkRight_SingleInstance_Mutex"
 		mutexNamePtr, _ := syswindows.UTF16PtrFromString(mutexName)
 		mutex, mutexErr := syswindows.CreateMutex(nil, false, mutexNamePtr)
@@ -62,14 +61,9 @@ func main() {
 	frameless := true
 	alwaysOnTop := false
 	resizable := true
-	title := ""
+	title := "Link Right"
 
-	if trayMode {
-		width, height = 320, 480
-		minWidth, minHeight = 320, 480
-		alwaysOnTop = true
-		resizable = false
-	} else if chooserMode {
+	if chooserMode {
 		width, height = 520, 380
 		minWidth, minHeight = 520, 380
 	}
@@ -116,12 +110,3 @@ func extractURLArg(args []string) string {
 	return ""
 }
 
-// isTrayMode returns true when the app was launched with the --tray flag.
-func isTrayMode(args []string) bool {
-	for _, arg := range args {
-		if arg == "--tray" {
-			return true
-		}
-	}
-	return false
-}

@@ -3,6 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Reset ──────────────────────────────────────────────────────────────────── */
 * {
   box-sizing: border-box;
 }
@@ -13,37 +14,34 @@ html, body {
 }
 
 body {
-  font-family: 'Arial', sans-serif;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
   font-size: 14px;
   line-height: 1.5;
+  background-color: #0d0d1f;
+  color: #f0eeff;
 }
 
-/* Scrollbar styling — dark theme to match the app */
+/* ── Scrollbar — purple-tinted dark theme ───────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #1f2937;
+  background: #161628;
 }
 ::-webkit-scrollbar-thumb {
-  background: #4b5563;
+  background: #3d3d70;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
+  background: #5c5490;
 }
-
-/* Dark scrollbar for chooser / tray — no Tailwind equivalent */
-.dark-scroll ::-webkit-scrollbar-track { background: #1f2937; }
-.dark-scroll ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
-.dark-scroll ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
 
 .tray-root ::-webkit-scrollbar { width: 4px; }
 .tray-root ::-webkit-scrollbar-track { background: transparent; }
-.tray-root ::-webkit-scrollbar-thumb { background: #374151; border-radius: 2px; }
+.tray-root ::-webkit-scrollbar-thumb { background: #2a2a50; border-radius: 2px; }
 
-/* Fade-in animation — no Tailwind equivalent without config */
+/* ── Fade-in animation ──────────────────────────────────────────────────────── */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -52,7 +50,7 @@ body {
   animation: fadeIn 0.2s ease forwards;
 }
 
-/* Toggle switch — requires pseudo-element tricks not possible with Tailwind utilities */
+/* ── Toggle switch ──────────────────────────────────────────────────────────── */
 .toggle {
   position: relative;
   display: inline-block;
@@ -64,7 +62,8 @@ body {
   position: absolute;
   cursor: pointer;
   top: 0; left: 0; right: 0; bottom: 0;
-  background-color: #d1d5db;
+  background-color: #2a2a50;
+  border: 1px solid #3d3d70;
   border-radius: 20px;
   transition: 0.2s;
 }
@@ -74,28 +73,48 @@ body {
   height: 14px;
   width: 14px;
   left: 3px;
-  bottom: 3px;
-  background-color: white;
+  bottom: 2px;
+  background-color: #9b8ec4;
   border-radius: 50%;
   transition: 0.2s;
 }
 .toggle input:checked + .toggle-slider {
-  background-color: #3b82f6;
+  background-color: #7c3aed;
+  border-color: #8b5cf6;
 }
 .toggle input:checked + .toggle-slider:before {
+  background-color: #ffffff;
   transform: translateX(16px);
 }
 
-/* Disabled button state */
+/* ── Disabled state ─────────────────────────────────────────────────────────── */
 button:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-/* Focus ring */
+/* ── Focus rings — purple glow ──────────────────────────────────────────────── */
 button:focus-visible,
 input:focus-visible,
-select:focus-visible {
-  outline: 2px solid #3b82f6;
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #8b5cf6;
   outline-offset: 2px;
+}
+
+/* ── Accent colour for native checkboxes / radios ───────────────────────────── */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: #8b5cf6;
+}
+
+/* ── Select element — dark themed ───────────────────────────────────────────── */
+select {
+  background-color: #1e1e38;
+  color: #f0eeff;
+  border-color: #2a2a50;
+}
+select option {
+  background-color: #1e1e38;
+  color: #f0eeff;
 }

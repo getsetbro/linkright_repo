@@ -28,10 +28,10 @@ func NewApp(devMode bool) *App {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.config = LoadConfig()
-	a.browsers = DetectBrowsers()
+	a.browsers = applyArchivedState(DetectBrowsers(), a.config.ArchivedBrowserPaths)
 
 	// First-run: auto-register as a browser (skip in dev mode and tray/picker modes)
-	if !a.devMode && !a.IsTrayMode() && a.GetCurrentURL() == "" {
+	if !a.devMode && a.GetCurrentURL() == "" {
 		if a.config.FirstRun || !IsRegistered() {
 			_ = RegisterApp()
 			a.config.FirstRun = false
@@ -65,16 +65,86 @@ func (a *App) domReady(ctx context.Context) {}
 
 // ---- Browser & Profile Methods ----
 
-// GetBrowsers returns all detected browsers with their profiles
+// GetBrowsers returns all detected browsers with archived state applied.
+// Archived browsers are included in the list (with Archived=true) so the
+// settings UI can display and un-archive them, but they are excluded from
+// the picker and rule selectors via GetActiveBrowsers.
 func (a *App) GetBrowsers() []Browser {
-	a.browsers = DetectBrowsers()
+	a.config = LoadConfig()
+	a.browsers = applyArchivedState(DetectBrowsers(), a.config.ArchivedBrowserPaths)
 	return a.browsers
 }
 
-// RefreshBrowsers re-scans for browsers and returns the updated list
+// GetActiveBrowsers returns only non-archived browsers for use in the picker
+// and rule selectors.
+func (a *App) GetActiveBrowsers() []Browser {
+	all := a.GetBrowsers()
+	var active []Browser
+	for _, b := range all {
+		if !b.Archived {
+			active = append(active, b)
+		}
+	}
+	return active
+}
+
+// RefreshBrowsers re-scans for browsers and returns the updated list (with archived state).
 func (a *App) RefreshBrowsers() []Browser {
-	a.browsers = DetectBrowsers()
+	a.config = LoadConfig()
+	a.browsers = applyArchivedState(DetectBrowsers(), a.config.ArchivedBrowserPaths)
 	return a.browsers
+}
+
+// ArchiveBrowser marks a browser as archived so it is hidden from the picker
+// and rule selectors. The browser is not deleted — it can be un-archived at
+// any time. Only browsers that the app has detected can be archived.
+func (a *App) ArchiveBrowser(path string) error {
+	a.config = LoadConfig()
+	// Add to archived list if not already present
+	for _, p := range a.config.ArchivedBrowserPaths {
+		if strings.EqualFold(p, path) {
+			return nil // already archived
+		}
+	}
+	a.config.ArchivedBrowserPaths = append(a.config.ArchivedBrowserPaths, path)
+	if err := SaveConfig(a.config); err != nil {
+		return err
+	}
+	a.browsers = applyArchivedState(DetectBrowsers(), a.config.ArchivedBrowserPaths)
+	return nil
+}
+
+// UnarchiveBrowser removes a browser from the archived list, making it
+// visible again in the picker and rule selectors.
+func (a *App) UnarchiveBrowser(path string) error {
+	a.config = LoadConfig()
+	var kept []string
+	for _, p := range a.config.ArchivedBrowserPaths {
+		if !strings.EqualFold(p, path) {
+			kept = append(kept, p)
+		}
+	}
+	a.config.ArchivedBrowserPaths = kept
+	if err := SaveConfig(a.config); err != nil {
+		return err
+	}
+	a.browsers = applyArchivedState(DetectBrowsers(), a.config.ArchivedBrowserPaths)
+	return nil
+}
+
+// applyArchivedState stamps the Archived flag onto each browser based on the
+// saved list of archived paths.
+func applyArchivedState(browsers []Browser, archivedPaths []string) []Browser {
+	archived := map[string]bool{}
+	for _, p := range archivedPaths {
+		archived[strings.ToLower(p)] = true
+	}
+	result := make([]Browser, len(browsers))
+	for i, b := range browsers {
+		b.Archived = archived[strings.ToLower(b.Path)]
+		result[i] = b
+	}
+	return result
 }
 
 // ---- Rule Methods ----
@@ -248,18 +318,32 @@ func (a *App) ProcessURL(rawURL string) string {
 		}
 	}
 
+	// Last resort: hand the URL to the OS (ShellExecute / cmd /c start).
+	// This prevents a dead-end when no picker browsers are available.
+	if err := launchWithOS(rawURL); err == nil {
+		return "launched"
+	}
+
 	return "picker"
 }
 
 // GetPickerData returns the data needed to display the picker popup.
-// For protocol URLs with no registered handler, a warning is included.
+// Only non-archived browsers are included. For protocol URLs with no
+// registered handler, a warning is included.
 func (a *App) GetPickerData() PickerRequest {
 	rawURL := a.GetCurrentURL()
+	// Only show active (non-archived) browsers in the picker
+	var activeBrowsers []Browser
+	for _, b := range a.browsers {
+		if !b.Archived {
+			activeBrowsers = append(activeBrowsers, b)
+		}
+	}
 	req := PickerRequest{
 		URL:      rawURL,
 		Domain:   ExtractDomain(rawURL),
 		Reason:   "no_rule",
-		Browsers: a.browsers,
+		Browsers: activeBrowsers,
 	}
 
 	if IsProtocolURL(rawURL) {
@@ -333,101 +417,10 @@ func (a *App) GetProtocolApps() []ProtocolApp {
 	return GetProtocolAppsForRules(a.config.Rules)
 }
 
-// ---- Startup / Tray Settings ----
-
-// GetStartWithWindows returns whether the tray startup shortcut is enabled.
-// It reflects the live state of the shortcut file, not just the config value.
-func (a *App) GetStartWithWindows() bool {
-	return IsStartupEnabled()
+// launchWithOS hands a URL to the Windows shell (cmd /c start ""), which
+// lets the OS decide which application to open it with. This is the last-
+// resort fallback when no browser or protocol handler could be found.
+func launchWithOS(url string) error {
+	return exec.Command("cmd", "/c", "start", "", url).Start()
 }
 
-// SetStartWithWindows creates or removes the Windows Startup shortcut for the
-// tray and persists the preference to config.
-func (a *App) SetStartWithWindows(enabled bool) error {
-	a.config.StartWithWindows = enabled
-	if err := SaveConfig(a.config); err != nil {
-		return err
-	}
-	if enabled {
-		return EnableStartup()
-	}
-	return DisableStartup()
-}
-
-// ---- Tray Popup Methods (Phase 9a) ----
-
-// IsTrayMode returns true when the app was launched with the --tray flag.
-func (a *App) IsTrayMode() bool {
-	for _, arg := range os.Args[1:] {
-		if arg == "--tray" {
-			return true
-		}
-	}
-	return false
-}
-
-// GetClipboardURL reads the system clipboard and returns the text if it looks
-// like a URL (has a recognised scheme), otherwise returns an empty string.
-func (a *App) GetClipboardURL() string {
-	text := ReadClipboardText()
-	text = strings.TrimSpace(text)
-	if ExtractScheme(text) != "" {
-		return text
-	}
-	return ""
-}
-
-// GetTrayData returns everything the tray popup needs in one call:
-// the detected browsers, the current default browser name, and any
-// clipboard URL.
-func (a *App) GetTrayData() TrayData {
-	a.config = LoadConfig()
-	a.browsers = DetectBrowsers()
-	return TrayData{
-		Browsers:       a.browsers,
-		DefaultBrowser: a.config.DefaultBrowser,
-		ClipboardURL:   a.GetClipboardURL(),
-	}
-}
-
-// OpenURLFromClipboard reads the clipboard URL and runs it through the full
-// rule-matching + launch pipeline (same as if the URL had been passed on the
-// command line).  Returns "launched" or "picker".
-func (a *App) OpenURLFromClipboard() string {
-	url := a.GetClipboardURL()
-	if url == "" {
-		return "no_url"
-	}
-	return a.ProcessURL(url)
-}
-
-// LaunchBrowserByName opens the clipboard URL directly in the named browser,
-// bypassing all rules.  Used when the user clicks a specific browser row in
-// the tray popup.
-func (a *App) LaunchBrowserByName(browserName string) error {
-	url := a.GetClipboardURL()
-	if url == "" {
-		return nil
-	}
-	for _, b := range a.browsers {
-		if b.Name == browserName {
-			return LaunchBrowser(b.Path, "", url)
-		}
-	}
-	return nil
-}
-
-// OpenSettings spawns a new LinkRight process in settings mode (no URL arg).
-func (a *App) OpenSettings() error {
-	exePath := GetExePath()
-	if exePath == "" {
-		return nil
-	}
-	cmd := exec.Command(exePath)
-	return cmd.Start()
-}
-
-// QuitApp closes the tray popup window.
-func (a *App) QuitApp() {
-	runtime.Quit(a.ctx)
-}

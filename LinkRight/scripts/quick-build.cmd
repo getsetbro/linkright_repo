@@ -4,15 +4,8 @@ setlocal
 :: ============================================
 ::  Link Right - Quick Build + Install
 ::  Builds the app, copies it to the install
-::  location, and opens a test URL.
-::
-::  Usage:
-::    quick-build.cmd                    (uses default test URL)
-::    quick-build.cmd https://github.com (uses custom test URL)
+::  location.
 :: ============================================
-
-set TEST_URL=%~1
-if "%TEST_URL%"=="" set TEST_URL=https://example.com
 
 echo ============================================
 echo  Link Right - Quick Build + Install
@@ -59,12 +52,6 @@ if exist "%INSTALL_DIR%" (
     echo  Note: Install location not found (%INSTALL_DIR%) - skipping copy.
     echo  Run install.cmd first to set up the install location.
 )
-
-echo.
-echo Opening test URL: %TEST_URL%
-echo (LinkRight should intercept it now)
-echo.
-start "" "%TEST_URL%"
 
 echo ============================================
 echo  Done! Check the LinkRight window.

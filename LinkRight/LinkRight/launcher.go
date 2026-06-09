@@ -24,12 +24,15 @@ func LaunchBrowser(browserPath, profileID, url string) error {
 func buildLaunchArgs(browserPath, profileID, url string) []string {
 	pathLower := strings.ToLower(browserPath)
 
-	// Firefox: use -P "ProfileName" flag
+	// Firefox: use -P "ProfileName" -no-remote flags.
+	// -no-remote prevents Firefox from connecting to an already-running instance,
+	// which would otherwise trigger the "Choose User Profile" modal.
 	if strings.Contains(pathLower, "firefox") {
-		if profileID != "" && profileID != "Default" {
-			return []string{"-P", profileID, url}
+		profile := profileID
+		if profile == "" {
+			profile = "Default"
 		}
-		return []string{url}
+		return []string{"-P", profile, "-no-remote", url}
 	}
 
 	// Chromium-based: use --profile-directory="Profile 1" flag
