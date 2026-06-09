@@ -8,6 +8,17 @@ Link Right is a lightweight Windows utility that intercepts link clicks and rout
 
 Grab the latest **LinkRight_Setup.zip** from [GitHub Releases](https://github.com/getsetbro/linkright_repo/releases), unzip, and run the installer. No admin required.
 
+### ⚠️ "Windows protected your PC" warning
+
+When you run the installer, Windows SmartScreen may show a blue **"Windows protected your PC"** dialog because the app isn't signed with a paid certificate. This is normal for small internal tools and is safe to bypass:
+
+1. Click **"More info"**
+2. Click **"Run anyway"**
+
+That's it — the installer will proceed normally. You only need to do this once.
+
+> **For IT / advanced users:** To suppress this warning across your team, see `LinkRight/installer/sign.ps1` for instructions on exporting the self-signed certificate and importing it into each machine's Trusted Publishers store.
+
 ## Features
 
 - Rule-based routing by domain, URL pattern, or protocol

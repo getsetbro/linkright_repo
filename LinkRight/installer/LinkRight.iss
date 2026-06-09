@@ -2,6 +2,12 @@
 ;  Link Right — Inno Setup Installer Script
 ;  Produces: LinkRight_Setup.exe
 ;  Per-user install, no admin required
+;
+;  Code signing: The build script (build_installer.cmd) signs
+;  both LinkRight.exe and LinkRight_Setup.exe using sign.ps1.
+;  On first run it creates a self-signed certificate. To fully
+;  suppress SmartScreen on co-workers' machines, export the cert
+;  and have them import it into Trusted Publishers (see sign.ps1).
 ; ============================================================
 
 #define AppName      "Link Right"

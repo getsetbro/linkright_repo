@@ -33,6 +33,13 @@ Link Right is a lightweight Windows utility that sits between Windows and your b
 5. Open **Windows Settings → Default Apps**, find **Link Right**, and set it as your default browser for `http` and `https`
 6. Done — all links now route through Link Right
 
+> ### ⚠️ "Windows protected your PC" warning
+> When you first run LinkRight (or the installer), Windows SmartScreen may show a blue warning because the app isn't signed with a paid certificate. This is normal for small internal tools and is safe to bypass:
+> 1. Click **"More info"**
+> 2. Click **"Run anyway"**
+>
+> You only need to do this once. To suppress the warning entirely across your team, ask your IT admin to import the self-signed certificate into each machine's Trusted Publishers store (see `installer/sign.ps1` for details).
+
 ---
 
 ## Setting Up Rules
