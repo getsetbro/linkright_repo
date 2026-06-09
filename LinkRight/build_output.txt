@@ -27,7 +27,7 @@ Race Detector     [90m[90m | [0m[0mfalse
   [90m[90m•[0m[0m [39m[39mGenerating application assets: [0m[0mDone.
   [90m[90m•[0m[0m [39m[39mCompiling application: [0m[0mDone.
 [30;46m[30;46m INFO [0m[0m [96m[96mWails is now using the new Go WebView2Loader. If you encounter any issues with it, please report them to https://github.com/wailsapp/wails/issues/2004. You could also use the old legacy loader with `-tags native_webview2loader`, but keep in mind this will be deprecated in the near future.[0m[0m
-Built 'c:\code\linkright_repo\LinkRight\LinkRight\build\bin\LinkRight.exe' in 16.452s.
+Built 'c:\code\linkright_repo\LinkRight\LinkRight\build\bin\LinkRight.exe' in 8.413s.
 
 [31;107m[31;107m ♥  [0m[0m [92m[92mIf Wails is useful to you or your company, please consider sponsoring the project:[0m[0m
 https://github.com/sponsors/leaanthony

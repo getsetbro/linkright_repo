@@ -36,6 +36,7 @@ export namespace main {
 	    iconPath: string;
 	    profiles: BrowserProfile[];
 	    type: string;
+	    archived: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new Browser(source);
@@ -48,6 +49,7 @@ export namespace main {
 	        this.iconPath = source["iconPath"];
 	        this.profiles = this.convertValues(source["profiles"], BrowserProfile);
 	        this.type = source["type"];
+	        this.archived = source["archived"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -159,6 +161,7 @@ export namespace main {
 	    firstRun: boolean;
 	    pickerSettings: PickerSettings;
 	    customBrowsers: Browser[];
+	    archivedBrowserPaths: string[];
 	
 	    static createFrom(source: any = {}) {
 	        return new Config(source);
@@ -173,6 +176,7 @@ export namespace main {
 	        this.firstRun = source["firstRun"];
 	        this.pickerSettings = this.convertValues(source["pickerSettings"], PickerSettings);
 	        this.customBrowsers = this.convertValues(source["customBrowsers"], Browser);
+	        this.archivedBrowserPaths = source["archivedBrowserPaths"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

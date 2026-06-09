@@ -18,8 +18,8 @@ let state = {
 
   // Settings UI
   tab: 'general',          // 'general' | 'browsers' | 'rules'
-  browsers: [],            // all browsers (active + archived), used in Browsers tab
-  activeBrowsers: [],      // non-archived browsers only, used in General tab + Rule editor
+  browsers: [],            // all browsers (active + excluded), used in Browsers tab
+  activeBrowsers: [],      // non-excluded browsers only, used in General tab + Rule editor
   rules: [],
   config: {},
   appStatus: {},
@@ -53,6 +53,7 @@ window.addEventListener('load', async () => {
 
     if (isPicker) {
         state.mode = 'picker';
+        try { Runtime.WindowSetTitle('Linker'); } catch (_) {}
 
         try {
           // Process the URL — if a rule matches and browser launches, window closes
@@ -168,7 +169,7 @@ function renderPickerMode() {
 
   if (!data) {
     document.getElementById('app').innerHTML = `
-      <div class="flex items-center justify-center h-screen bg-gray-900 text-gray-400 text-sm">
+      <div class="flex items-center justify-center h-screen bg-app-vignette text-text-secondary text-sm">
         Loading…
       </div>`;
     return;
@@ -181,14 +182,14 @@ function renderPickerMode() {
   const selectedBrowser = browsers[state.selectedBrowserIndex] || null;
 
   document.getElementById('app').innerHTML = `
-    <div class="picker-root flex flex-col h-screen bg-gray-900 text-gray-100 select-none overflow-hidden">
+    <div class="picker-root flex flex-col h-screen bg-app-vignette text-text-primary select-none overflow-hidden">
 
       <!-- Frameless title bar / drag region -->
-      <div class="flex items-center h-8 bg-gray-900 select-none flex-shrink-0"
+      <div class="flex items-center h-8 bg-surface select-none flex-shrink-0"
            style="--wails-draggable: drag">
-        <span class="flex-1 pl-3 text-xs text-gray-500">Open with…</span>
+        <span class="flex-1 pl-3 text-xs text-text-muted">Open with…</span>
         <button id="btn-picker-close"
-          class="w-9 h-8 flex items-center justify-center text-gray-500 hover:text-white hover:bg-red-600 transition-colors text-sm leading-none"
+          class="w-9 h-8 flex items-center justify-center text-text-muted hover:text-white hover:bg-red-600 transition-colors text-sm leading-none"
           style="--wails-draggable: no-drag"
           title="Close">&#x2715;</button>
       </div>
@@ -196,12 +197,12 @@ function renderPickerMode() {
       <!-- Header: URL display -->
       ${showURL ? `
       <div class="px-4 pt-2 pb-2">
-        <div class="text-xs text-gray-500 mb-1">Opening link</div>
-        <div class="break-all text-xs text-gray-400 bg-gray-800 px-3 py-1.5 rounded-md border border-gray-700 max-h-[52px] overflow-y-auto font-mono">${esc(truncateURL(data.url, 80))}</div>
+        <div class="text-xs text-text-muted mb-1">Opening link</div>
+        <div class="break-all text-xs text-text-secondary bg-surface px-3 py-1.5 rounded-md border border-border max-h-[52px] overflow-y-auto font-mono">${esc(truncateURL(data.url, 80))}</div>
       </div>
       ` : `
       <div class="px-4 pt-4 pb-2">
-        <div class="text-sm font-medium text-gray-300">Open with…</div>
+        <div class="text-sm font-medium text-text-primary">Open with…</div>
       </div>
       `}
 
@@ -221,7 +222,7 @@ function renderPickerMode() {
       <!-- Profile selector (shown when selected browser has multiple profiles) -->
       ${selectedBrowser && selectedBrowser.profiles && selectedBrowser.profiles.length > 1 ? `
       <div class="px-4 pb-2">
-        <select id="picker-profile" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+        <select id="picker-profile" class="w-full bg-surface-raised border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent">
           ${selectedBrowser.profiles.map(p => `
             <option value="${esc(p.id)}" ${state.selectedProfileId === p.id ? 'selected' : ''}>${esc(p.name)}</option>
           `).join('')}
@@ -230,18 +231,18 @@ function renderPickerMode() {
       ` : ''}
 
       <!-- Footer -->
-      <div class="px-4 pb-4 pt-2 border-t border-gray-800 space-y-3">
+      <div class="px-4 pb-4 pt-2 border-t border-border space-y-3">
         <label class="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" id="picker-always-use" class="accent-blue-500 w-4 h-4" ${state.alwaysUse ? 'checked' : ''}>
-          <span class="text-xs text-gray-400">Always use this browser for <span class="text-gray-300 font-medium">${esc(data.domain || 'this site')}</span></span>
+          <input type="checkbox" id="picker-always-use" class="accent-accent w-4 h-4" ${state.alwaysUse ? 'checked' : ''}>
+          <span class="text-xs text-text-secondary">Always use this browser for <span class="text-text-primary font-medium">${esc(data.domain || 'this site')}</span></span>
         </label>
         <div class="flex gap-2">
           <button id="btn-picker-cancel"
-            class="flex-1 py-2 text-sm text-gray-400 hover:text-gray-200 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors border border-gray-700">
+            class="flex-1 py-2 text-sm text-text-secondary hover:text-text-primary bg-surface hover:bg-surface-raised rounded-lg transition-colors border border-border">
             Cancel
           </button>
           <button id="btn-picker-open"
-            class="flex-1 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors ${!selectedBrowser ? 'opacity-50 cursor-not-allowed' : ''}">
+            class="flex-1 py-2 text-sm font-semibold text-white bg-accent hover:bg-accent-glow rounded-lg transition-colors ${!selectedBrowser ? 'opacity-50 cursor-not-allowed' : ''}">
             Open
           </button>
         </div>
@@ -262,11 +263,11 @@ function renderPickerBrowserCard(browser, index, showNames) {
 
   const baseCard = `relative flex flex-col items-center justify-center rounded-xl border-2 cursor-pointer select-none transition-all duration-150`;
   const stateCard = isSelected
-    ? 'bg-[#1e3a5f] border-blue-500 shadow-[0_0_0_1px_#3b82f6]'
-    : 'bg-gray-800 border-transparent hover:bg-gray-700 hover:border-gray-600 hover:-translate-y-px';
+    ? 'bg-accent-muted border-accent shadow-glow-sm'
+    : 'bg-surface border-transparent hover:bg-surface-raised hover:border-border hover:-translate-y-px';
 
-  const numColor = isSelected ? 'text-blue-300' : 'text-gray-500';
-  const nameColor = isSelected ? 'text-blue-200' : 'text-gray-400';
+  const numColor = isSelected ? 'text-accent-light' : 'text-text-muted';
+  const nameColor = isSelected ? 'text-accent-light' : 'text-text-secondary';
 
   return `
     <div class="picker-browser-card ${baseCard} ${stateCard} ${sizeStyles.card}"
@@ -378,7 +379,7 @@ async function cancelPicker() {
 // ─── SETTINGS MODE ────────────────────────────────────────────────────────────
 function renderSettingsMode() {
   document.getElementById('app').innerHTML = `
-    <div class="flex flex-col h-screen bg-gray-900 text-gray-100 select-none">
+    <div class="flex flex-col h-screen bg-app-vignette text-text-primary select-none">
       ${renderTitleBar()}
       ${renderTabs()}
       <div class="flex-1 overflow-hidden">
@@ -398,35 +399,35 @@ function renderSettingsMode() {
 function renderFirstRunOverlay() {
   return `
     <div id="first-run-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[100] p-6">
-      <div class="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-700 flex flex-col items-center text-center px-8 py-8 gap-5 fade-in">
+      <div class="bg-surface rounded-2xl shadow-2xl w-full max-w-sm border border-border flex flex-col items-center text-center px-8 py-8 gap-5 fade-in">
 
         <!-- Icon -->
         <div class="text-5xl leading-none" style="font-family:'Segoe MDL2 Assets',sans-serif">&#xE71B;</div>
 
         <!-- Heading -->
         <div>
-          <h1 class="text-lg font-bold text-gray-100 mb-1">Welcome to Link Right</h1>
-          <p class="text-sm text-gray-400 leading-relaxed">
+          <h1 class="text-lg font-bold text-text-primary mb-1">Welcome to Link Right</h1>
+          <p class="text-sm text-text-secondary leading-relaxed">
             Link Right is registered as a browser.<br>
-            To intercept all links, set it as your <strong class="text-gray-200">Windows default browser</strong>.
+            To intercept all links, set it as your <strong class="text-text-primary">Windows default browser</strong>.
           </p>
         </div>
 
         <!-- Steps -->
-        <ol class="text-left text-xs text-gray-400 space-y-1.5 w-full bg-gray-900 rounded-lg px-4 py-3">
-          <li class="flex items-start gap-2"><span class="text-blue-400 font-bold mt-px">1.</span><span>Click <strong class="text-gray-200">Set as Default…</strong> below</span></li>
-          <li class="flex items-start gap-2"><span class="text-blue-400 font-bold mt-px">2.</span><span>Find <strong class="text-gray-200">Link Right</strong> in the browser list</span></li>
-          <li class="flex items-start gap-2"><span class="text-blue-400 font-bold mt-px">3.</span><span>Click it to set as default — done!</span></li>
+        <ol class="text-left text-xs text-text-secondary space-y-1.5 w-full bg-app-bg rounded-lg px-4 py-3">
+          <li class="flex items-start gap-2"><span class="text-accent-light font-bold mt-px">1.</span><span>Click <strong class="text-text-primary">Set as Default…</strong> below</span></li>
+          <li class="flex items-start gap-2"><span class="text-accent-light font-bold mt-px">2.</span><span>Find <strong class="text-text-primary">Link Right</strong> in the browser list</span></li>
+          <li class="flex items-start gap-2"><span class="text-accent-light font-bold mt-px">3.</span><span>Click it to set as default — done!</span></li>
         </ol>
 
         <!-- Buttons -->
         <div class="flex flex-col gap-2 w-full">
           <button id="btn-firstrun-set-default"
-            class="w-full py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors">
+            class="w-full py-2.5 text-sm font-semibold text-white bg-accent hover:bg-accent-glow rounded-lg transition-colors">
             Set as Default…
           </button>
           <button id="btn-firstrun-dismiss"
-            class="w-full py-2 text-xs text-gray-500 hover:text-gray-300 transition-colors">
+            class="w-full py-2 text-xs text-text-muted hover:text-text-primary transition-colors">
             I'll do this later
           </button>
         </div>
@@ -459,19 +460,19 @@ function attachFirstRunListeners() {
 // ─── Title Bar ────────────────────────────────────────────────────────────────
 function renderTitleBar() {
   return `
-    <div class="flex items-center h-9 border-b border-gray-700 bg-gray-900 select-none"
+    <div class="flex items-center h-9 border-b border-border select-none"
          style="--wails-draggable: drag">
-      <span class="flex-1 pl-3 text-sm font-semibold text-gray-200 tracking-wide">Preferences</span>
+      <span class="flex-1 pl-3 text-sm font-semibold text-text-primary tracking-wide">Preferences</span>
       <button id="btn-titlebar-minimize"
-        class="w-10 h-9 flex items-center justify-center text-gray-400 hover:text-gray-100 hover:bg-gray-700 transition-colors text-base leading-none"
+        class="w-10 h-9 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-raised transition-colors text-base leading-none"
         style="--wails-draggable: no-drag"
         title="Minimize">&#x2014;</button>
       <button id="btn-titlebar-maximize"
-        class="w-10 h-9 flex items-center justify-center text-gray-400 hover:text-gray-100 hover:bg-gray-700 transition-colors leading-none"
+        class="w-10 h-9 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-raised transition-colors leading-none"
         style="--wails-draggable: no-drag; font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.8rem;"
         title="Maximize / Restore">&#xE922;</button>
       <button id="btn-titlebar-close"
-        class="w-10 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-red-600 transition-colors text-base leading-none"
+        class="w-10 h-9 flex items-center justify-center text-text-secondary hover:text-white hover:bg-red-600 transition-colors text-base leading-none"
         style="--wails-draggable: no-drag"
         title="Close">&#x2715;</button>
     </div>
@@ -487,12 +488,12 @@ function renderTabs() {
     { id: 'rules',    label: 'Rules',    icon: '\uE71C' }, // Filter
   ];
   return `
-    <div class="flex justify-center gap-1 py-2 border-b border-gray-700 bg-gray-900 overflow-x-hidden">
+    <div class="flex justify-center gap-1 py-2 border-b border-border bg-surface overflow-x-hidden">
       ${tabs.map(t => `
         <button data-tab="${t.id}" class="flex flex-col items-center gap-0.5 px-3 py-1 rounded text-xs transition-colors min-w-0
           ${state.tab === t.id
-            ? 'text-blue-400 border-b-2 border-blue-400'
-            : 'text-gray-400 hover:text-gray-200'}"
+            ? 'text-accent-light border-b-2 border-accent-light'
+            : 'text-text-secondary hover:text-text-primary'}"
           title="${t.label}">
           <span class="text-lg leading-none" style="font-family:'Segoe MDL2 Assets',sans-serif">${t.icon}</span>
           <span class="leading-none">${t.label}</span>
@@ -511,37 +512,37 @@ function renderGeneral() {
     <div class="p-5 space-y-5 overflow-y-auto h-full">
 
       <section class="space-y-2">
-        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Default Browser Status</h2>
-        <div class="bg-gray-800 rounded-lg p-4 space-y-3">
+        <h2 class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Default Browser Status</h2>
+        <div class="bg-surface rounded-lg p-4 space-y-3">
           <div class="flex items-center justify-between">
             <div>
-              <div class="text-sm font-medium text-gray-200">Default browser</div>
-              <div class="text-xs text-gray-400">${s.isDefaultBrowser ? 'Link Right is the Windows default' : 'Not set as default'}</div>
+              <div class="text-sm font-medium text-text-primary">Default browser</div>
+              <div class="text-xs text-text-secondary">${s.isDefaultBrowser ? 'Link Right is the Windows default' : 'Not set as default'}</div>
             </div>
             <div class="flex items-center gap-2">
               <button id="btn-refresh-default-status" title="Check default browser status"
-                class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded transition-colors"
+                class="w-7 h-7 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-raised rounded transition-colors"
                 style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.9rem;">&#xE72C;</button>
               ${!s.isDefaultBrowser
-                ? `<button id="btn-set-default" class="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors">Set as Default…</button>`
+                ? `<button id="btn-set-default" class="px-3 py-1.5 text-xs bg-accent hover:bg-accent-glow text-white rounded transition-colors">Set as Default…</button>`
                 : `<span class="text-xs text-green-400 font-medium">✓ Active</span>`
               }
             </div>
           </div>
-          <div class="text-xs text-gray-500 border-t border-gray-700 pt-2 mt-1">
+          <div class="text-xs text-text-muted border-t border-border pt-2 mt-1">
             <span style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.85rem; vertical-align:middle;">&#xE946;</span>
-            Link Right must be set as the <strong class="text-gray-400">Windows Default Browser</strong> to intercept and route links. Without this, clicking links will bypass Link Right entirely.
+            Link Right must be set as the <strong class="text-text-secondary">Windows Default Browser</strong> to intercept and route links. Without this, clicking links will bypass Link Right entirely.
           </div>
         </div>
       </section>
 
       <section class="space-y-2">
-        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Primary Browser ( and Profile )</h2>
-        <div class="bg-gray-800 rounded-lg p-4">
+        <h2 class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Primary Browser ( and Profile )</h2>
+        <div class="bg-surface rounded-lg p-4">
           <div class="flex gap-3">
             <div class="flex-1">
-              <label class="text-xs text-gray-400 block mb-1">Browser</label>
-              <select id="sel-default-browser" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+              <label class="text-xs text-text-secondary block mb-1">Browser</label>
+              <select id="sel-default-browser" class="w-full bg-surface-raised border border-border rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent">
                 <option value="">— None —</option>
                 ${state.activeBrowsers.map(b => `
                   <option value="${esc(b.name)}" ${c.defaultBrowser === b.name ? 'selected' : ''}>${esc(b.name)}</option>
@@ -549,8 +550,8 @@ function renderGeneral() {
               </select>
             </div>
             <div id="default-profile-row" class="flex-1 ${c.defaultBrowser ? '' : 'invisible'}">
-              <label class="text-xs text-gray-400 block mb-1">Profile</label>
-              <select id="sel-default-profile" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+              <label class="text-xs text-text-secondary block mb-1">Profile</label>
+              <select id="sel-default-profile" class="w-full bg-surface-raised border border-border rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent">
                 ${renderProfileOptions(c.defaultBrowser, c.defaultProfile)}
               </select>
             </div>
@@ -559,24 +560,24 @@ function renderGeneral() {
       </section>
 
       <section class="space-y-2">
-        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Fallback Behavior</h2>
-        <div class="bg-gray-800 rounded-lg p-4">
-          <div class="text-xs text-gray-400 mb-3">When no rule matches a link:</div>
+        <h2 class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Fallback Behavior</h2>
+        <div class="bg-surface rounded-lg p-4">
+          <div class="text-xs text-text-secondary mb-3">When no rule matches a link:</div>
           <div class="flex gap-3">
-            <label class="flex-1 flex items-start gap-3 cursor-pointer bg-gray-750 rounded-lg p-3 border-2 transition-colors ${(c.fallbackBehavior || 'default') === 'default' ? 'border-blue-600 bg-blue-950' : 'border-gray-700 hover:border-gray-600'}" style="${(c.fallbackBehavior || 'default') === 'default' ? 'background:#0f1f3d' : ''}">
-              <input type="radio" name="fallback" value="default" class="accent-blue-500 mt-0.5 flex-shrink-0"
+            <label class="flex-1 flex items-start gap-3 cursor-pointer bg-surface-raised rounded-lg p-3 border-2 transition-colors ${(c.fallbackBehavior || 'default') === 'default' ? 'border-accent bg-accent-muted' : 'border-border hover:border-border'}" style="${(c.fallbackBehavior || 'default') === 'default' ? 'background:#1a0a3e' : ''}">
+              <input type="radio" name="fallback" value="default" class="accent-accent mt-0.5 flex-shrink-0"
                 ${(c.fallbackBehavior || 'default') === 'default' ? 'checked' : ''}>
               <div>
-                <div class="text-sm text-gray-200 font-medium">Use primary browser</div>
-                <div class="text-xs text-gray-400 mt-0.5">${defaultBrowser ? defaultBrowser.name : 'Set a primary browser above'}</div>
+                <div class="text-sm text-text-primary font-medium">Use primary browser</div>
+                <div class="text-xs text-text-secondary mt-0.5">${defaultBrowser ? defaultBrowser.name : 'Set a primary browser above'}</div>
               </div>
             </label>
-            <label class="flex-1 flex items-start gap-3 cursor-pointer rounded-lg p-3 border-2 transition-colors ${(c.fallbackBehavior || 'default') === 'picker' ? 'border-blue-600' : 'border-gray-700 hover:border-gray-600'}" style="${(c.fallbackBehavior || 'default') === 'picker' ? 'background:#0f1f3d' : ''}">
-              <input type="radio" name="fallback" value="picker" class="accent-blue-500 mt-0.5 flex-shrink-0"
+            <label class="flex-1 flex items-start gap-3 cursor-pointer rounded-lg p-3 border-2 transition-colors ${(c.fallbackBehavior || 'default') === 'picker' ? 'border-accent' : 'border-border hover:border-border'}" style="${(c.fallbackBehavior || 'default') === 'picker' ? 'background:#1a0a3e' : ''}">
+              <input type="radio" name="fallback" value="picker" class="accent-accent mt-0.5 flex-shrink-0"
                 ${(c.fallbackBehavior || 'default') === 'picker' ? 'checked' : ''}>
               <div>
-                <div class="text-sm text-gray-200 font-medium">Show browser picker</div>
-                <div class="text-xs text-gray-400 mt-0.5">Ask which browser to use each time</div>
+                <div class="text-sm text-text-primary font-medium">Show browser picker</div>
+                <div class="text-xs text-text-secondary mt-0.5">Ask which browser to use each time</div>
               </div>
             </label>
           </div>
@@ -601,14 +602,14 @@ function renderProfileOptions(browserName, selectedProfile) {
 function renderBrowsers() {
   return `
     <div class="flex flex-col h-full">
-      <div class="border-b border-gray-700 px-4 py-2 flex items-center gap-3 bg-gray-900">
+      <div class="border-b border-border px-4 py-2 flex items-center gap-3 bg-surface">
         <button id="btn-refresh-browsers" title="Refresh browser list"
-          class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded transition-colors text-sm">↺</button>
-        <span class="text-xs text-gray-500">Refresh</span>
+          class="w-7 h-7 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-raised rounded transition-colors text-sm">↺</button>
+        <span class="text-xs text-text-muted">Refresh</span>
       </div>
       <div class="flex-1 overflow-y-auto">
         ${state.browsers.length === 0
-          ? `<div class="flex items-center justify-center h-32 text-gray-500 text-sm">No browsers detected</div>`
+          ? `<div class="flex items-center justify-center h-32 text-text-muted text-sm">No browsers detected</div>`
           : state.browsers.map((b, i) => renderBrowserRow(b, i)).join('')
         }
       </div>
@@ -622,27 +623,27 @@ function renderBrowserRow(browser, index) {
   const icon = getBrowserEmoji(browser, '20px');
   const isArchived = !!browser.archived;
 
-  const rowBase = `browser-row flex items-center gap-3 px-4 py-2.5 border-b border-gray-800 cursor-pointer transition-colors`;
+  const rowBase = `browser-row flex items-center gap-3 px-4 py-2.5 border-b border-border cursor-pointer transition-colors`;
   const rowState = isArchived
-    ? 'opacity-50 hover:opacity-70 hover:bg-gray-800'
-    : (isSelected ? 'bg-blue-900 hover:bg-blue-800' : 'hover:bg-gray-800');
+    ? 'opacity-50 hover:opacity-70 hover:bg-surface'
+    : (isSelected ? 'bg-accent-muted hover:bg-accent-muted' : 'hover:bg-surface');
 
   return `
     <div class="${rowBase} ${rowState}"
          data-browser-index="${index}" data-browser-path="${esc(browser.path)}">
       <span class="leading-none flex-shrink-0 ${isArchived ? 'grayscale' : ''}">${icon}</span>
-      <span class="flex-1 text-sm ${isArchived ? 'text-gray-500 line-through' : 'text-gray-200'}">${esc(browser.name)}</span>
+      <span class="flex-1 text-sm ${isArchived ? 'text-text-muted line-through' : 'text-text-primary'}">${esc(browser.name)}</span>
       ${isArchived
-        ? `<span class="text-xs text-gray-600 font-medium px-2 py-0.5 rounded border border-gray-700 bg-gray-800">Archived</span>
-           <button class="btn-unarchive-browser text-xs text-gray-400 hover:text-green-300 hover:bg-gray-700 px-2 py-0.5 rounded transition-colors flex-shrink-0"
-             data-browser-path="${esc(browser.path)}" title="Restore this browser">Restore</button>`
+        ? `<span class="text-xs text-text-muted font-medium px-2 py-0.5 rounded border border-border bg-surface">Excluded</span>
+           <button class="btn-unarchive-browser text-xs text-text-secondary hover:text-green-300 hover:bg-surface-raised px-2 py-0.5 rounded transition-colors flex-shrink-0"
+             data-browser-path="${esc(browser.path)}" title="Include this browser in LinkRight again">Include</button>`
         : `${isDefault
-            ? `<span class="text-xs text-blue-400 font-medium px-2 py-0.5 rounded border border-blue-800 bg-blue-950">Primary</span>`
-            : `<button class="btn-set-default-browser text-xs text-gray-500 hover:text-gray-200 hover:bg-gray-700 px-2 py-0.5 rounded transition-colors"
+            ? `<span class="text-xs text-accent-light font-medium px-2 py-0.5 rounded border border-accent-muted bg-accent-muted">Primary</span>`
+            : `<button class="btn-set-default-browser text-xs text-text-muted hover:text-text-primary hover:bg-surface-raised px-2 py-0.5 rounded transition-colors"
                  data-browser-index="${index}" title="Set as primary browser">Set as primary</button>`
           }
-          <button class="btn-archive-browser text-xs text-gray-500 hover:text-yellow-300 hover:bg-gray-700 px-2 py-0.5 rounded transition-colors flex-shrink-0"
-            data-browser-path="${esc(browser.path)}" title="Hide this browser from the picker">Archive</button>`
+          <button class="btn-archive-browser text-xs text-text-muted hover:text-yellow-300 hover:bg-surface-raised px-2 py-0.5 rounded transition-colors flex-shrink-0"
+            data-browser-path="${esc(browser.path)}" title="Exclude from LinkRight's picker and rules">Exclude</button>`
       }
     </div>
   `;
@@ -655,19 +656,22 @@ function renderRules() {
     <div class="flex flex-col h-full">
       <div class="flex-1 overflow-y-auto">
         ${state.rules.length === 0
-          ? `<div class="flex flex-col items-center justify-center h-40 text-gray-500 text-sm gap-2">
+          ? `<div class="flex flex-col items-center justify-center h-40 text-text-muted text-sm gap-2">
                <span class="text-3xl" style="font-family:'Segoe MDL2 Assets',sans-serif">&#xE71C;</span>
                <span>No rules yet</span>
-               <span class="text-xs text-gray-600">Click + to add your first rule</span>
+               <span class="text-xs text-text-muted">Click + to add your first rule</span>
              </div>`
           : state.rules.map((r, i) => renderRuleRow(r, i)).join('')
         }
       </div>
-      <div class="border-t border-gray-700 px-4 py-2 flex items-center gap-3 bg-gray-900">
+      <div class="border-t border-border px-4 py-2 flex items-center gap-3 bg-surface">
         <button id="btn-add-rule" title="Add rule"
-          class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded transition-colors text-lg font-light">+</button>
+          class="flex items-center gap-1.5 px-2 py-1 text-xs text-text-secondary hover:text-text-primary hover:bg-surface-raised rounded transition-colors">
+          <span class="text-lg font-light leading-none">+</span>
+          <span>Add</span>
+        </button>
         <button id="btn-delete-rule" title="Delete selected rule"
-          class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded transition-colors text-lg font-light">−</button>
+          class="w-7 h-7 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-raised rounded transition-colors text-lg font-light">−</button>
       </div>
     </div>
   `;
@@ -679,20 +683,20 @@ function renderRuleRow(rule, index) {
   const condSummary = getRuleConditionSummary(rule);
   const browserName = rule.browser || '—';
   return `
-    <div class="rule-row flex items-center gap-3 px-4 py-2.5 border-b border-gray-800 hover:bg-gray-800 cursor-pointer transition-colors"
+    <div class="rule-row flex items-center gap-3 px-4 py-2.5 border-b border-border hover:bg-surface cursor-pointer transition-colors"
          data-rule-index="${index}" data-rule-id="${esc(rule.id)}">
-      <div class="text-gray-600 cursor-grab text-xs leading-none select-none">⠿</div>
+      <div class="text-text-muted cursor-grab text-xs leading-none select-none">⠿</div>
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2">
-          <span class="text-sm font-medium text-gray-200 truncate">${esc(rule.name || 'Unnamed rule')}</span>
+          <span class="text-sm font-medium text-text-primary truncate">${esc(rule.name || 'Unnamed rule')}</span>
           ${hasWarning ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-800 border border-amber-300 rounded-full text-[0.75rem] font-medium">⚠ ${esc(validation.message)}</span>` : ''}
         </div>
-        <div class="text-xs text-gray-500 truncate mt-0.5">${esc(condSummary)} → ${esc(browserName)}</div>
+        <div class="text-xs text-text-muted truncate mt-0.5">${esc(condSummary)} → ${esc(browserName)}</div>
       </div>
-      <button class="btn-edit-rule-item flex-shrink-0 w-7 h-7 flex items-center justify-center text-gray-500 hover:text-gray-200 hover:bg-gray-700 rounded transition-colors"
+      <button class="btn-edit-rule-item flex-shrink-0 w-7 h-7 flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-surface-raised rounded transition-colors"
         data-rule-index="${index}" title="Edit rule"
         style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.85rem;">&#xE70F;</button>
-      <button class="btn-delete-rule-item flex-shrink-0 w-7 h-7 flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-gray-700 rounded transition-colors"
+      <button class="btn-delete-rule-item flex-shrink-0 w-7 h-7 flex items-center justify-center text-text-muted hover:text-red-400 hover:bg-surface-raised rounded transition-colors"
         data-rule-id="${esc(rule.id)}" data-rule-index="${index}" title="Delete rule"
         style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.85rem;">&#xE74D;</button>
       <label class="toggle flex-shrink-0" title="${rule.enabled ? 'Disable' : 'Enable'} rule">
@@ -1211,28 +1215,28 @@ function renderIconsTab() {
   ];
 
   const iconCard = (glyph, name, font) => `
-    <div class="icon-card group relative flex flex-col items-center justify-center gap-1 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 cursor-pointer transition-colors border border-transparent hover:border-gray-600"
+    <div class="icon-card group relative flex flex-col items-center justify-center gap-1 p-2 rounded-lg bg-surface hover:bg-surface-raised cursor-pointer transition-colors border border-transparent hover:border-border"
          title="${esc(name)} (${esc(font)})"
          onclick="navigator.clipboard.writeText('${esc(glyph)}').then(()=>{ const t=this.querySelector('.icon-copied'); if(t){t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),1000);} })">
       <span class="text-2xl leading-none" style="font-family:'${esc(font)}',sans-serif">${glyph}</span>
-      <span class="text-[9px] text-gray-500 text-center leading-tight w-full truncate px-0.5">${esc(name)}</span>
-      <span class="icon-copied hidden absolute inset-0 flex items-center justify-center bg-blue-600 bg-opacity-90 rounded-lg text-white text-[10px] font-semibold">Copied!</span>
+      <span class="text-[9px] text-text-muted text-center leading-tight w-full truncate px-0.5">${esc(name)}</span>
+      <span class="icon-copied hidden absolute inset-0 flex items-center justify-center bg-accent bg-opacity-90 rounded-lg text-white text-[10px] font-semibold">Copied!</span>
     </div>
   `;
 
   return `
     <div class="p-4 overflow-y-auto h-full space-y-6">
 
-      <div class="text-xs text-gray-500 bg-gray-800 rounded-lg px-3 py-2 border border-gray-700 flex items-center gap-2">
+      <div class="text-xs text-text-muted bg-surface rounded-lg px-3 py-2 border border-border flex items-center gap-2">
         <span style="font-family:'Segoe MDL2 Assets',sans-serif">&#xE82F;</span>
         Click any icon to copy it to clipboard. Segoe MDL2 Assets is built into Windows 10/11 — no external libraries needed.
       </div>
 
       <!-- Segoe MDL2 Assets -->
       <section>
-        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+        <h2 class="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">
           Segoe MDL2 Assets
-          <span class="ml-2 text-gray-600 font-normal normal-case">${mdl2Icons.length} icons · Windows 10/11 built-in</span>
+          <span class="ml-2 text-text-muted font-normal normal-case">${mdl2Icons.length} icons · Windows 10/11 built-in</span>
         </h2>
         <div class="grid gap-1" style="grid-template-columns: repeat(auto-fill, minmax(72px, 1fr))">
           ${mdl2Icons.map(i => iconCard(i.code, i.name, 'Segoe MDL2 Assets')).join('')}
@@ -1254,11 +1258,11 @@ function renderRuleEditorOverlay() {
 
   return `
     <div class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-      <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg border border-gray-700 flex flex-col max-h-[90vh]">
+      <div class="bg-surface rounded-xl shadow-2xl w-full max-w-lg border border-border flex flex-col max-h-[90vh]">
 
         <!-- Header -->
-        <div class="px-5 pt-5 pb-3 border-b border-gray-700">
-          <h2 class="text-base font-semibold text-gray-100">${isNew ? 'New Rule' : 'Edit Rule'}</h2>
+        <div class="px-5 pt-5 pb-3 border-b border-border">
+          <h2 class="text-base font-semibold text-text-primary">${isNew ? 'New Rule' : 'Edit Rule'}</h2>
         </div>
 
         <!-- Scrollable body -->
@@ -1266,28 +1270,28 @@ function renderRuleEditorOverlay() {
 
           <!-- Title -->
           <div>
-            <label class="block text-xs font-medium text-gray-400 mb-1">Title</label>
+            <label class="block text-xs font-medium text-text-secondary mb-1">Title</label>
             <input id="rule-name" type="text" placeholder="Title"
               value="${esc(rule.name || '')}"
-              class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500">
+              class="w-full bg-surface-raised border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent">
           </div>
 
           <!-- Condition Builder -->
           <div>
             <div class="flex items-center gap-2 mb-2">
-              <span class="text-xs font-medium text-gray-400">Use this rule when:</span>
+              <span class="text-xs font-medium text-text-secondary">Use this rule when:</span>
             </div>
 
             <!-- Logic selector row -->
             <div class="flex items-center gap-2 mb-3">
-              <select id="condition-logic" class="bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+              <select id="condition-logic" class="bg-surface-raised border border-border rounded px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent">
                 <option value="all" ${conditionLogic === 'all' ? 'selected' : ''}>All</option>
                 <option value="any" ${conditionLogic === 'any' ? 'selected' : ''}>Any</option>
               </select>
-              <span class="text-sm text-gray-400">of the following are true</span>
+              <span class="text-sm text-text-secondary">of the following are true</span>
               <div class="flex-1"></div>
               <button id="btn-add-condition"
-                class="w-6 h-6 flex items-center justify-center bg-gray-600 hover:bg-gray-500 text-gray-200 rounded text-sm font-bold transition-colors" title="Add condition">+</button>
+                class="w-6 h-6 flex items-center justify-center bg-border-bright hover:bg-border-bright text-text-primary rounded text-sm font-bold transition-colors" title="Add condition">+</button>
             </div>
 
             <!-- Condition rows -->
@@ -1298,17 +1302,17 @@ function renderRuleEditorOverlay() {
 
           <!-- Action -->
           <div>
-            <label class="block text-xs font-medium text-gray-400 mb-2">Open in browser:</label>
-            <div class="bg-gray-750 border border-gray-600 rounded-lg p-3 space-y-3" style="background:#2d3748">
+            <label class="block text-xs font-medium text-text-secondary mb-2">Open in browser:</label>
+            <div class="bg-surface-raised border border-border rounded-lg p-3 space-y-3" style="background:#1e1e38">
               <div class="flex gap-2">
-                <select id="rule-browser" class="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+                <select id="rule-browser" class="flex-1 bg-surface-raised border border-border rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent">
                   <option value="">— Select browser —</option>
                   ${state.activeBrowsers.map(b => `
                     <option value="${esc(b.name)}" data-path="${esc(b.path)}"
                       ${rule.browser === b.name ? 'selected' : ''}>${esc(b.name)}</option>
                   `).join('')}
                 </select>
-                <select id="rule-profile" class="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+                <select id="rule-profile" class="flex-1 bg-surface-raised border border-border rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent">
                   ${renderProfileOptions(rule.browser, rule.profile)}
                 </select>
               </div>
@@ -1318,17 +1322,17 @@ function renderRuleEditorOverlay() {
         </div>
 
         <!-- Footer -->
-        <div class="px-5 py-4 border-t border-gray-700 flex items-center gap-3">
+        <div class="px-5 py-4 border-t border-border flex items-center gap-3">
           <label class="flex items-center gap-2 cursor-pointer flex-1">
-            <input type="checkbox" id="rule-enabled" class="accent-blue-500 w-4 h-4" ${rule.enabled !== false ? 'checked' : ''}>
-            <span class="text-sm text-gray-300">Enable this rule</span>
+            <input type="checkbox" id="rule-enabled" class="accent-accent w-4 h-4" ${rule.enabled !== false ? 'checked' : ''}>
+            <span class="text-sm text-text-primary">Enable this rule</span>
           </label>
           <button id="btn-rule-cancel"
-            class="px-4 py-2 text-sm text-gray-300 hover:text-gray-100 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">
+            class="px-4 py-2 text-sm text-text-primary hover:text-text-primary bg-surface-raised hover:bg-border-bright rounded-lg transition-colors">
             Cancel
           </button>
           <button id="btn-rule-save"
-            class="px-5 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors">
+            class="px-5 py-2 text-sm font-medium text-white bg-accent hover:bg-accent-glow rounded-lg transition-colors">
             OK
           </button>
         </div>
@@ -1341,13 +1345,13 @@ function renderRuleEditorOverlay() {
 function renderConditionRow(condition, index, total) {
   return `
     <div class="condition-row flex items-center gap-2" data-condition-index="${index}">
-      <span class="flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm text-gray-400 select-none">URL</span>
-      <span class="flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm text-gray-400 select-none">contains</span>
-      <input type="text" class="cond-value flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
+      <span class="flex-1 bg-surface-raised border border-border rounded px-2 py-1.5 text-sm text-text-secondary select-none">URL</span>
+      <span class="flex-1 bg-surface-raised border border-border rounded px-2 py-1.5 text-sm text-text-secondary select-none">contains</span>
+      <input type="text" class="cond-value flex-1 bg-surface-raised border border-border rounded px-2 py-1.5 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent"
         placeholder="value" value="${esc(condition.value || '')}">
-      <button class="btn-remove-condition w-6 h-6 flex items-center justify-center bg-gray-600 hover:bg-red-700 text-gray-300 hover:text-white rounded text-sm font-bold transition-colors flex-shrink-0"
+      <button class="btn-remove-condition w-6 h-6 flex items-center justify-center bg-border-bright hover:bg-red-700 text-text-primary hover:text-white rounded text-sm font-bold transition-colors flex-shrink-0"
         data-condition-index="${index}" title="Remove condition">−</button>
-      <button class="btn-add-condition-inline w-6 h-6 flex items-center justify-center bg-gray-600 hover:bg-gray-500 text-gray-300 hover:text-white rounded text-sm font-bold transition-colors flex-shrink-0"
+      <button class="btn-add-condition-inline w-6 h-6 flex items-center justify-center bg-border-bright hover:bg-border-bright text-text-primary hover:text-white rounded text-sm font-bold transition-colors flex-shrink-0"
         data-condition-index="${index}" title="Add condition">+</button>
     </div>
   `;
@@ -1458,15 +1462,15 @@ function attachListeners() {
           e.target.closest('.btn-unarchive-browser')) return;
       state.selectedBrowserPath = row.dataset.browserPath || null;
       document.querySelectorAll('.browser-row').forEach(r => {
-        r.classList.remove('bg-blue-900', 'hover:bg-blue-800');
-        r.classList.add('hover:bg-gray-800');
+        r.classList.remove('bg-accent-muted', 'hover:bg-accent-muted');
+        r.classList.add('hover:bg-surface');
       });
-      row.classList.add('bg-blue-900', 'hover:bg-blue-800');
-      row.classList.remove('hover:bg-gray-800');
+      row.classList.add('bg-accent-muted', 'hover:bg-accent-muted');
+      row.classList.remove('hover:bg-surface');
     });
   });
 
-  // Archive browser (hide from picker and rules)
+  // Exclude browser (hide from picker and rules)
   document.querySelectorAll('.btn-archive-browser').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -1483,7 +1487,7 @@ function attachListeners() {
         state.activeBrowsers = state.browsers.filter(b => !b.archived);
 
         if (isPrimary) {
-          // Clear the primary browser since it's now archived
+          // Clear the primary browser since it's now excluded
           state.config.defaultBrowser = '';
           state.config.defaultProfile = '';
           await App.SaveSettings('', '', state.config.fallbackBehavior || 'default').catch(() => {});
@@ -1494,13 +1498,13 @@ function attachListeners() {
           showToast(`${browser.name} was your primary browser — please select a new one.`, 'info');
         } else {
           render();
-          showToast(`${browser.name} archived`, 'info');
+          showToast(`${browser.name} excluded from LinkRight`, 'info');
         }
-      } catch (e) { showToast('Failed to archive browser: ' + e, 'error'); }
+      } catch (e) { showToast('Failed to exclude browser: ' + e, 'error'); }
     });
   });
 
-  // Unarchive browser (restore to picker and rules)
+  // Include browser (restore to picker and rules)
   document.querySelectorAll('.btn-unarchive-browser').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -1512,7 +1516,7 @@ function attachListeners() {
         state.browsers = await App.GetBrowsers();
         state.activeBrowsers = state.browsers.filter(b => !b.archived);
         render();
-        showToast(`${browser.name} restored`, 'success');
+        showToast(`${browser.name} included`, 'success');
       } catch (e) { showToast('Failed to restore browser: ' + e, 'error'); }
     });
   });
@@ -1574,8 +1578,8 @@ function attachListeners() {
   document.querySelectorAll('.rule-row').forEach(row => {
     row.addEventListener('click', (e) => {
       if (e.target.closest('.toggle') || e.target.closest('.btn-edit-rule-item') || e.target.closest('.btn-delete-rule-item')) return;
-      document.querySelectorAll('.rule-row').forEach(r => r.classList.remove('selected', 'bg-blue-900'));
-      row.classList.add('selected', 'bg-blue-900');
+      document.querySelectorAll('.rule-row').forEach(r => r.classList.remove('selected', 'bg-accent-muted'));
+      row.classList.add('selected', 'bg-accent-muted');
     });
     row.addEventListener('dblclick', (e) => {
       if (e.target.closest('.toggle') || e.target.closest('.btn-edit-rule-item') || e.target.closest('.btn-delete-rule-item')) return;
@@ -1625,6 +1629,21 @@ function attachRuleEditorListeners() {
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) { state.editingRule = null; render(); }
   });
+
+  // Auto-fill: mirror rule title into first condition value when it's empty
+  const ruleNameInput = document.getElementById('rule-name');
+  if (ruleNameInput) {
+    let autoFillTimer = null;
+    ruleNameInput.addEventListener('input', () => {
+      clearTimeout(autoFillTimer);
+      autoFillTimer = setTimeout(() => {
+        const firstCondValue = document.querySelector('.cond-value');
+        if (firstCondValue && firstCondValue.value === '') {
+          firstCondValue.value = ruleNameInput.value;
+        }
+      }, 200);
+    });
+  }
 
   // Browser change → update profile dropdown
   const ruleBrowser = document.getElementById('rule-browser');
@@ -1748,13 +1767,13 @@ function attachDragListeners() {
     });
     row.addEventListener('dragend', () => {
       row.classList.remove('opacity-50');
-      document.querySelectorAll('.rule-row').forEach(r => r.classList.remove('border-t-2', 'border-blue-400'));
+      document.querySelectorAll('.rule-row').forEach(r => r.classList.remove('border-t-2', 'border-accent-light'));
     });
     row.addEventListener('dragover', (e) => {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
-      document.querySelectorAll('.rule-row').forEach(r => r.classList.remove('border-t-2', 'border-blue-400'));
-      row.classList.add('border-t-2', 'border-blue-400');
+      document.querySelectorAll('.rule-row').forEach(r => r.classList.remove('border-t-2', 'border-accent-light'));
+      row.classList.add('border-t-2', 'border-accent-light');
     });
     row.addEventListener('drop', async (e) => {
       e.preventDefault();
@@ -1783,22 +1802,31 @@ function showToast(message, type = 'info') {
   const existing = document.querySelector('.js-toast');
   if (existing) existing.remove();
 
-  const typeClasses = {
-    success: 'bg-green-100 text-green-800 border border-green-300',
-    error:   'bg-red-100 text-red-800 border border-red-300',
-    info:    'bg-blue-100 text-blue-800 border border-blue-300',
+  const icons = {
+    success: '✓',
+    warning: '⚠',
+    error:   '✕',
+    info:    'ℹ',
+  };
+
+  const cssClass = {
+    success: 'toast-success',
+    warning: 'toast-warning',
+    error:   'toast-danger',
+    info:    'toast-info',
   };
 
   const toast = document.createElement('div');
   toast.className = [
     'js-toast',
     'fixed bottom-4 right-4 z-[9999]',
-    'px-5 py-3 rounded-lg text-sm font-medium',
-    'shadow-[0_4px_12px_rgba(0,0,0,0.15)]',
+    'flex items-center gap-2',
+    'px-4 py-2 rounded-full text-sm font-medium',
+    'shadow-[0_4px_12px_rgba(0,0,0,0.3)]',
     'fade-in',
-    typeClasses[type] || typeClasses.info,
+    cssClass[type] || cssClass.info,
   ].join(' ');
-  toast.textContent = message;
+  toast.innerHTML = `<span class="text-base leading-none">${icons[type] || icons.info}</span><span>${esc(message)}</span>`;
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 3000);
 }

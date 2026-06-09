@@ -66,6 +66,7 @@ func main() {
 	if chooserMode {
 		width, height = 520, 380
 		minWidth, minHeight = 520, 380
+		title = "Linker"
 	}
 
 	err := wails.Run(&options.App{

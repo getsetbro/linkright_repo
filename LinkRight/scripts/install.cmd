@@ -57,25 +57,26 @@ echo   Copied to: %INSTALL_EXE%
 echo.
 echo [3/5] Creating Start Menu shortcut...
 set "START_MENU=%APPDATA%\Microsoft\Windows\Start Menu\Programs"
-powershell -NoProfile -Command ^
-  "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%START_MENU%\Link Right.lnk'); $s.TargetPath = '%INSTALL_EXE%'; $s.Description = 'Route every link to the right browser'; $s.Save()" >nul 2>&1
-if %errorlevel%==0 (
-    echo   Created: %START_MENU%\Link Right.lnk
+set "LNK_PATH=%START_MENU%\Link Right.lnk"
+powershell -NoProfile -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut(\"%LNK_PATH%\"); $s.TargetPath = \"%INSTALL_EXE%\"; $s.Description = \"Route every link to the right browser\"; $s.Save()" >nul 2>&1
+if "%errorlevel%"=="0" (
+    echo   Created: %LNK_PATH%
 ) else (
-    echo   Warning: Could not create Start Menu shortcut (non-fatal).
+    echo   Warning: Could not create Start Menu shortcut ^(non-fatal^).
 )
 
 echo.
 echo [4/5] Creating Startup tray shortcut...
 set "STARTUP_DIR=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
-powershell -NoProfile -Command ^
-  "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%STARTUP_DIR%\Link Right (Tray).lnk'); $s.TargetPath = '%INSTALL_EXE%'; $s.Arguments = '--tray'; $s.Description = 'Link Right system tray'; $s.Save()" >nul 2>&1
-if %errorlevel%==0 (
-    echo   Created: %STARTUP_DIR%\Link Right (Tray).lnk
-    echo   (Link Right tray will start automatically with Windows)
-) else (
-    echo   Warning: Could not create Startup shortcut (non-fatal).
-)
+set "TRAY_LNK=%STARTUP_DIR%\Link Right (Tray).lnk"
+powershell -NoProfile -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut(\"%TRAY_LNK%\"); $s.TargetPath = \"%INSTALL_EXE%\"; $s.Arguments = \"--tray\"; $s.Description = \"Link Right system tray\"; $s.Save()" >nul 2>&1
+if %errorlevel% neq 0 goto :tray_shortcut_failed
+echo   Created startup tray shortcut.
+echo   Link Right tray will start automatically with Windows.
+goto :tray_shortcut_done
+:tray_shortcut_failed
+echo   Warning: Could not create Startup shortcut (non-fatal).
+:tray_shortcut_done
 
 echo.
 echo [5/5] Launching Link Right to register as a browser...

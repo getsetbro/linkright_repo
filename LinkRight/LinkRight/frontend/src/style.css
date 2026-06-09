@@ -108,13 +108,47 @@ input[type="radio"] {
   accent-color: #8b5cf6;
 }
 
+/* ── Fallback-option radio buttons — visually hidden ────────────────────────── */
+.fallback-option input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+}
+
 /* ── Select element — dark themed ───────────────────────────────────────────── */
 select {
   background-color: #1e1e38;
   color: #f0eeff;
   border-color: #2a2a50;
+  padding-right: 2rem;
 }
 select option {
   background-color: #1e1e38;
   color: #f0eeff;
+}
+
+/* ── Toast styles — dark pill ───────────────────────────────────────────────── */
+.toast-success {
+  background-color: #064e3b;
+  color: #6ee7b7;
+  border: 1px solid #065f46;
+}
+.toast-warning {
+  background-color: #78350f;
+  color: #fcd34d;
+  border: 1px solid #92400e;
+}
+.toast-danger {
+  background-color: #7f1d1d;
+  color: #fca5a5;
+  border: 1px solid #991b1b;
+}
+.toast-info {
+  background-color: #1e1b4b;
+  color: #a5b4fc;
+  border: 1px solid #312e81;
 }

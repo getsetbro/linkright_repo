@@ -311,6 +311,13 @@ func (a *App) ProcessURL(rawURL string) string {
 		}
 	}
 
+	// If the user chose "picker" as fallback, show the picker immediately.
+	// Do NOT fall through to launchWithOS — that would re-invoke LinkRight
+	// (the default browser) and cause an infinite loop.
+	if a.config.FallbackBehavior == "picker" {
+		return "picker"
+	}
+
 	// For protocol URLs with no rule, try the system-registered handler automatically
 	if IsProtocolURL(rawURL) {
 		if err := LaunchProtocolURL(rawURL); err == nil {
