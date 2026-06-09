@@ -50,5 +50,5 @@ Filename: "{sys}\cmd.exe"; Parameters: "/c start ms-settings:defaultapps"; Descr
 
 [UninstallRun]
 ; Run the built-in uninstaller to clean registry entries before removing files
-Filename: "{app}\{#AppExeName}"; Parameters: "--uninstall"; Flags: runhidden waituntilterminated
+Filename: "{app}\{#AppExeName}"; Parameters: "--uninstall"; RunOnceId: "CleanRegistry"; Flags: runhidden waituntilterminated
 
