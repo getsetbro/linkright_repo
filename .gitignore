@@ -1,6 +1,9 @@
 build_output.txt
 
-# Installer output (distributed via GitHub Releases)
+# Compiled binaries (distributed via GitHub Releases)
+*.exe
+
+# Installer output
 LinkRight/installer/output/
 
 # Build artifacts
