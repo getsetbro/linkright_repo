@@ -185,11 +185,11 @@ function renderPickerMode() {
     <div class="picker-root flex flex-col h-screen bg-app-vignette text-text-primary select-none overflow-hidden">
 
       <!-- Frameless title bar / drag region -->
-      <div class="flex items-center h-8 bg-surface select-none flex-shrink-0"
+      <div class="flex items-center h-8 bg-surface select-none flex-shrink-0 rounded-t-xl"
            style="--wails-draggable: drag">
         <span class="flex-1 pl-3 text-xs text-text-muted">Open with…</span>
         <button id="btn-picker-close"
-          class="w-9 h-8 flex items-center justify-center text-text-muted hover:text-white hover:bg-red-600 transition-colors text-sm leading-none"
+          class="w-9 h-8 flex items-center justify-center text-text-muted hover:text-white hover:bg-red-600 rounded-tr-xl transition-colors text-sm leading-none"
           style="--wails-draggable: no-drag"
           title="Close">&#x2715;</button>
       </div>
@@ -460,9 +460,9 @@ function attachFirstRunListeners() {
 // ─── Title Bar ────────────────────────────────────────────────────────────────
 function renderTitleBar() {
   return `
-    <div class="flex items-center h-9 border-b border-border select-none"
+    <div class="flex items-center h-9 border-b border-border select-none rounded-t-xl"
          style="--wails-draggable: drag">
-      <span class="flex-1 pl-3 text-sm font-semibold text-text-primary tracking-wide">Preferences</span>
+      <span class="flex-1 pl-3 text-sm font-semibold text-text-primary tracking-wide">Link Right</span>
       <button id="btn-titlebar-minimize"
         class="w-10 h-9 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-raised transition-colors text-base leading-none"
         style="--wails-draggable: no-drag"
@@ -472,7 +472,7 @@ function renderTitleBar() {
         style="--wails-draggable: no-drag; font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.8rem;"
         title="Maximize / Restore">&#xE922;</button>
       <button id="btn-titlebar-close"
-        class="w-10 h-9 flex items-center justify-center text-text-secondary hover:text-white hover:bg-red-600 transition-colors text-base leading-none"
+        class="w-10 h-9 flex items-center justify-center text-text-secondary hover:text-white hover:bg-red-600 rounded-tr-xl transition-colors text-base leading-none"
         style="--wails-draggable: no-drag"
         title="Close">&#x2715;</button>
     </div>
@@ -521,8 +521,10 @@ function renderGeneral() {
             </div>
             <div class="flex items-center gap-2">
               <button id="btn-refresh-default-status" title="Check default browser status"
-                class="w-7 h-7 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-raised rounded transition-colors"
-                style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.9rem;">&#xE72C;</button>
+                class="flex items-center gap-1.5 px-2 py-1 text-xs text-text-secondary hover:text-text-primary hover:bg-surface-raised rounded transition-colors">
+                <span style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.9rem;">&#xE72C;</span>
+                <span>Refresh</span>
+              </button>
               ${!s.isDefaultBrowser
                 ? `<button id="btn-set-default" class="px-3 py-1.5 text-xs bg-accent hover:bg-accent-glow text-white rounded transition-colors">Set as Default…</button>`
                 : `<span class="text-xs text-green-400 font-medium">✓ Active</span>`
@@ -604,8 +606,10 @@ function renderBrowsers() {
     <div class="flex flex-col h-full">
       <div class="border-b border-border px-4 py-2 flex items-center gap-3 bg-surface">
         <button id="btn-refresh-browsers" title="Refresh browser list"
-          class="w-7 h-7 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-raised rounded transition-colors text-sm">↺</button>
-        <span class="text-xs text-text-muted">Refresh</span>
+          class="flex items-center gap-1.5 px-2 py-1 text-xs text-text-secondary hover:text-text-primary hover:bg-surface-raised rounded transition-colors">
+          <span style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.9rem;">&#xE72C;</span>
+          <span>Refresh</span>
+        </button>
       </div>
       <div class="flex-1 overflow-y-auto">
         ${state.browsers.length === 0
@@ -654,6 +658,18 @@ function renderBrowserRow(browser, index) {
 function renderRules() {
   return `
     <div class="flex flex-col h-full">
+      <div class="border-b border-border px-4 py-2 flex items-center justify-between bg-surface">
+        <button id="btn-refresh-rules" title="Refresh rules"
+          class="flex items-center gap-1.5 px-2 py-1 text-xs text-text-secondary hover:text-text-primary hover:bg-surface-raised rounded transition-colors">
+          <span style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.9rem;">&#xE72C;</span>
+          <span>Refresh</span>
+        </button>
+        <button id="btn-add-rule" title="Add rule"
+          class="flex items-center gap-1.5 px-2 py-1 text-xs text-text-secondary hover:text-text-primary hover:bg-surface-raised rounded transition-colors">
+          <span style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.9rem;">&#xE710;</span>
+          <span>Add</span>
+        </button>
+      </div>
       <div class="flex-1 overflow-y-auto">
         ${state.rules.length === 0
           ? `<div class="flex flex-col items-center justify-center h-40 text-text-muted text-sm gap-2">
@@ -663,15 +679,6 @@ function renderRules() {
              </div>`
           : state.rules.map((r, i) => renderRuleRow(r, i)).join('')
         }
-      </div>
-      <div class="border-t border-border px-4 py-2 flex items-center gap-3 bg-surface">
-        <button id="btn-add-rule" title="Add rule"
-          class="flex items-center gap-1.5 px-2 py-1 text-xs text-text-secondary hover:text-text-primary hover:bg-surface-raised rounded transition-colors">
-          <span class="text-lg font-light leading-none">+</span>
-          <span>Add</span>
-        </button>
-        <button id="btn-delete-rule" title="Delete selected rule"
-          class="w-7 h-7 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-raised rounded transition-colors text-lg font-light">−</button>
       </div>
     </div>
   `;
@@ -1522,6 +1529,16 @@ function attachListeners() {
   });
 
   // ── Rules tab ──
+  const btnRefreshRules = document.getElementById('btn-refresh-rules');
+  if (btnRefreshRules) btnRefreshRules.addEventListener('click', async () => {
+    try {
+      state.rules = (await App.GetRules()) || [];
+      state.validations = (await App.ValidateRules().catch(() => [])) || [];
+      render();
+      showToast('Rules refreshed', 'info');
+    } catch (e) { showToast('Refresh failed', 'error'); }
+  });
+
   const btnAddRule = document.getElementById('btn-add-rule');
   if (btnAddRule) btnAddRule.addEventListener('click', () => {
     state.editingRule = {
@@ -1530,21 +1547,6 @@ function attachListeners() {
       enabled: true, priority: state.rules.length + 1,
     };
     render();
-  });
-
-  const btnDeleteRule = document.getElementById('btn-delete-rule');
-  if (btnDeleteRule) btnDeleteRule.addEventListener('click', async () => {
-    const selected = document.querySelector('.rule-row.selected');
-    if (!selected) { showToast('Select a rule first', 'info'); return; }
-    const id = selected.dataset.ruleId;
-    if (!confirm('Delete this rule?')) return;
-    try {
-      await App.DeleteRule(id);
-      state.rules = (await App.GetRules()) || [];
-      state.validations = (await App.ValidateRules().catch(() => [])) || [];
-      render();
-      showToast('Rule deleted', 'success');
-    } catch (e) { showToast('Delete failed: ' + e, 'error'); }
   });
 
   // Per-row edit buttons
@@ -1626,22 +1628,29 @@ function attachRuleEditorListeners() {
     render();
   });
 
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) { state.editingRule = null; render(); }
-  });
 
-  // Auto-fill: mirror rule title into first condition value when it's empty
+  // Auto-fill: on title blur, update first condition value if it's empty
   const ruleNameInput = document.getElementById('rule-name');
   if (ruleNameInput) {
-    let autoFillTimer = null;
-    ruleNameInput.addEventListener('input', () => {
-      clearTimeout(autoFillTimer);
-      autoFillTimer = setTimeout(() => {
-        const firstCondValue = document.querySelector('.cond-value');
-        if (firstCondValue && firstCondValue.value === '') {
-          firstCondValue.value = ruleNameInput.value;
+    ruleNameInput.addEventListener('blur', () => {
+      const firstCondValue = document.querySelector('.cond-value');
+      if (firstCondValue && firstCondValue.value.trim() === '') {
+        firstCondValue.value = ruleNameInput.value;
+      }
+    });
+  }
+
+  // Auto-fill: on first condition value blur, update title if it's empty (use domain if URL)
+  const firstCondValue = document.querySelector('.cond-value');
+  if (firstCondValue) {
+    firstCondValue.addEventListener('blur', () => {
+      const ruleNameEl = document.getElementById('rule-name');
+      if (ruleNameEl && ruleNameEl.value.trim() === '') {
+        const val = firstCondValue.value.trim();
+        if (val) {
+          ruleNameEl.value = extractDomainIfUrl(val);
         }
-      }, 200);
+      }
     });
   }
 
@@ -1875,4 +1884,19 @@ function truncateURL(url, maxLen) {
   if (!url) return '';
   if (url.length <= maxLen) return url;
   return url.slice(0, maxLen - 1) + '…';
+}
+
+// Extract domain from a URL string; returns the original value if it's not a URL
+function extractDomainIfUrl(val) {
+  if (!val) return val;
+  try {
+    // Check if it looks like a URL (has protocol or starts with common patterns)
+    let urlStr = val;
+    if (/^https?:\/\//i.test(urlStr) || /^[a-z0-9-]+\.[a-z]{2,}/i.test(urlStr)) {
+      if (!/^https?:\/\//i.test(urlStr)) urlStr = 'https://' + urlStr;
+      const url = new URL(urlStr);
+      return url.hostname.replace(/^www\./, '');
+    }
+  } catch (_) {}
+  return val;
 }

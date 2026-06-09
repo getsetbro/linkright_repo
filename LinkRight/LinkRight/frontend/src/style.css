@@ -17,8 +17,18 @@ body {
   font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
   font-size: 14px;
   line-height: 1.5;
-  background-color: #0d0d1f;
+  background-color: transparent;
   color: #f0eeff;
+}
+
+/* ── Window shell — rounded corners for frameless windows ───────────────────── */
+#app {
+  height: 100%;
+}
+#app > div:first-child {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #2a2a50;
 }
 
 /* ── Scrollbar — purple-tinted dark theme ───────────────────────────────────── */
@@ -151,4 +161,17 @@ select option {
   background-color: #1e1b4b;
   color: #a5b4fc;
   border: 1px solid #312e81;
+}
+
+/* ── Picker modal — remove non-form borders, add light border to form fields ── */
+.picker-root .border-border,
+.picker-root .border-t,
+.picker-root .border-b {
+  border-color: transparent;
+}
+.picker-root select,
+.picker-root input[type="text"],
+.picker-root input[type="checkbox"],
+.picker-root textarea {
+  border: 1px solid #3d3d70 !important;
 }
