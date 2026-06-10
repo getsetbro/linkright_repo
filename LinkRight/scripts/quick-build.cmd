@@ -17,6 +17,7 @@ echo Building...
 set "SCRIPT_DIR=%~dp0"
 
 cd /d "%~dp0..\LinkRight"
+set GOWORK=off
 wails build >"%SCRIPT_DIR%..\build_output.txt" 2>&1
 
 if %errorlevel% neq 0 (

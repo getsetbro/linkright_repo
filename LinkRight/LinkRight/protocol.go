@@ -70,6 +70,13 @@ func LookupProtocolApp(scheme string) *ProtocolApp {
 		if exePath != "" {
 			if _, err := os.Stat(exePath); err == nil {
 				available = true
+			} else {
+				// If the path is not absolute, try to resolve it via PATH
+				// (e.g. MSIX apps like ms-teams.exe that live in WindowsApps)
+				if resolved, lookErr := exec.LookPath(exePath); lookErr == nil {
+					exePath = resolved
+					available = true
+				}
 			}
 		}
 

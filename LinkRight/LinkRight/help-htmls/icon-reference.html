@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Link Right — Icon Reference (Segoe MDL2 Assets)</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+      background: #0d0d1f;
+      color: #f0eeff;
+      margin: 0;
+      padding: 2rem;
+    }
+    h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; }
+    h2 { font-size: 1.25rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1rem; color: #a78bfa; }
+    .subtitle {
+      color: #9b8ec4;
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+    }
+    .search-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #0d0d1f;
+      padding: 1rem 0;
+      margin-bottom: 1rem;
+    }
+    .search-bar input {
+      width: 100%;
+      max-width: 400px;
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1px solid #2a2a50;
+      background: #1e1e38;
+      color: #f0eeff;
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-bar input:focus {
+      border-color: #8b5cf6;
+    }
+    .search-bar input::placeholder {
+      color: #9484c0;
+    }
+    .icon-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 8px;
+    }
+    .icon-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 8px;
+      border-radius: 10px;
+      border: 1px solid #2a2a50;
+      background: #161628;
+      cursor: pointer;
+      transition: all 0.15s;
+      min-height: 100px;
+    }
+    .icon-card:hover {
+      border-color: #8b5cf6;
+      background: #1e1e38;
+      transform: translateY(-1px);
+    }
+    .icon-card.copied {
+      border-color: #34d399;
+      background: #064e3b;
+    }
+    .icon-glyph {
+      font-family: 'Segoe MDL2 Assets', sans-serif;
+      font-size: 1.75rem;
+      line-height: 1;
+      margin-bottom: 8px;
+      color: #f0eeff;
+    }
+    .icon-name {
+      font-size: 0.6rem;
+      color: #9b8ec4;
+      text-align: center;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+    .icon-code {
+      font-size: 0.55rem;
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      color: #9484c0;
+      margin-top: 3px;
+    }
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #064e3b;
+      color: #6ee7b7;
+      border: 1px solid #065f46;
+      padding: 8px 20px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+      z-index: 1000;
+    }
+    .toast.show { opacity: 1; }
+    .usage-note {
+      background: #161628;
+      border: 1px solid #2a2a50;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 1.5rem;
+      font-size: 0.8rem;
+      color: #9b8ec4;
+      line-height: 1.6;
+    }
+    .usage-note code {
+      background: #1e1e38;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 0.75rem;
+      color: #c084fc;
+    }
+    .count-badge {
+      display: inline-block;
+      background: #4c1d95;
+      color: #a78bfa;
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-left: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🔣 Link Right — Icon Reference</h1>
+  <p class="subtitle">All icons from <strong>Segoe MDL2 Assets</strong> — the single icon font used in this app. Click any icon to copy its HTML entity.</p>
+
+  <div class="usage-note">
+    <strong style="color: #f0eeff;">Usage in HTML/JS:</strong><br>
+    <code>&lt;span style="font-family:'Segoe MDL2 Assets',sans-serif"&gt;&amp;#xE713;&lt;/span&gt;</code><br><br>
+    <strong style="color: #f0eeff;">Usage in JS string:</strong><br>
+    <code>'\uE713'</code> — Settings icon
+  </div>
+
+  <div class="search-bar">
+    <input type="text" id="search" placeholder="Search icons by name or code (e.g. 'settings', 'E713')…">
+  </div>
+
+  <!-- Icons used in the app -->
+  <h2>Icons Used in Link Right <span class="count-badge" id="app-count"></span></h2>
+  <div class="icon-grid" id="app-icons"></div>
+
+  <!-- Full icon set -->
+  <h2>All Available Segoe MDL2 Assets Icons <span class="count-badge" id="all-count"></span></h2>
+  <div class="icon-grid" id="all-icons"></div>
+
+  <div class="toast" id="toast">Copied!</div>
+
+  <script>
+    // Icons specifically used in Link Right app
+    const appIcons = [
+      { code: 0xE713, name: 'Settings' },
+      { code: 0xE774, name: 'Slideshow (Browsers)' },
+      { code: 0xE71C, name: 'Filter (Rules)' },
+      { code: 0xE71D, name: 'AllApps' },
+      { code: 0xE71B, name: 'Link' },
+      { code: 0xE710, name: 'Add' },
+      { code: 0xE711, name: 'Cancel' },
+      { code: 0xE70F, name: 'Edit' },
+      { code: 0xE74D, name: 'Delete' },
+      { code: 0xE72C, name: 'Refresh' },
+      { code: 0xE946, name: 'Info' },
+      { code: 0xE73E, name: 'CheckMark' },
+      { code: 0xE922, name: 'Maximize' },
+      { code: 0xE89D, name: 'IncidentTriangle (Warning) ⚠' },
+    ];
+
+    // Comprehensive Segoe MDL2 Assets icon set
+    const allIcons = [
+      { code: 0xE700, name: 'GlobalNavButton' },
+      { code: 0xE701, name: 'Wifi' },
+      { code: 0xE702, name: 'Bluetooth' },
+      { code: 0xE703, name: 'Connect' },
+      { code: 0xE704, name: 'InternetSharing' },
+      { code: 0xE705, name: 'VPN' },
+      { code: 0xE706, name: 'Brightness' },
+      { code: 0xE707, name: 'MapPin' },
+      { code: 0xE708, name: 'QuietHours' },
+      { code: 0xE709, name: 'Airplane' },
+      { code: 0xE70A, name: 'Tablet' },
+      { code: 0xE70B, name: 'QuickNote' },
+      { code: 0xE70C, name: 'RememberedDevice' },
+      { code: 0xE70D, name: 'ChevronDown' },
+      { code: 0xE70E, name: 'ChevronUp' },
+      { code: 0xE70F, name: 'Edit' },
+      { code: 0xE710, name: 'Add' },
+      { code: 0xE711, name: 'Cancel' },
+      { code: 0xE712, name: 'More' },
+      { code: 0xE713, name: 'Settings' },
+      { code: 0xE714, name: 'Video' },
+      { code: 0xE715, name: 'Mail' },
+      { code: 0xE716, name: 'People' },
+      { code: 0xE717, name: 'Phone' },
+      { code: 0xE718, name: 'Pin' },
+      { code: 0xE719, name: 'Shop' },
+      { code: 0xE71A, name: 'Stop' },
+      { code: 0xE71B, name: 'Link' },
+      { code: 0xE71C, name: 'Filter' },
+      { code: 0xE71D, name: 'AllApps' },
+      { code: 0xE71E, name: 'Zoom' },
+      { code: 0xE71F, name: 'ZoomOut' },
+      { code: 0xE720, name: 'Microphone' },
+      { code: 0xE721, name: 'Search' },
+      { code: 0xE722, name: 'Camera' },
+      { code: 0xE723, name: 'Attach' },
+      { code: 0xE724, name: 'Send' },
+      { code: 0xE725, name: 'SendFill' },
+      { code: 0xE726, name: 'WalkSolid' },
+      { code: 0xE727, name: 'InPrivate' },
+      { code: 0xE728, name: 'FavoriteList' },
+      { code: 0xE729, name: 'PageSolid' },
+      { code: 0xE72A, name: 'Forward' },
+      { code: 0xE72B, name: 'Back' },
+      { code: 0xE72C, name: 'Refresh' },
+      { code: 0xE72D, name: 'Share' },
+      { code: 0xE72E, name: 'Lock' },
+      { code: 0xE730, name: 'ReportHacked' },
+      { code: 0xE731, name: 'EMI' },
+      { code: 0xE734, name: 'FavoriteStar' },
+      { code: 0xE735, name: 'FavoriteStarFill' },
+      { code: 0xE738, name: 'Remove' },
+      { code: 0xE739, name: 'Checkbox' },
+      { code: 0xE73A, name: 'CheckboxComposite' },
+      { code: 0xE73B, name: 'CheckboxFill' },
+      { code: 0xE73E, name: 'CheckMark' },
+      { code: 0xE740, name: 'BackSpaceQWERTY' },
+      { code: 0xE741, name: 'SelectAll' },
+      { code: 0xE742, name: 'Orientation' },
+      { code: 0xE743, name: 'Import' },
+      { code: 0xE74A, name: 'TouchPointer' },
+      { code: 0xE74B, name: 'Merge' },
+      { code: 0xE74C, name: 'NewWindow' },
+      { code: 0xE74D, name: 'Delete' },
+      { code: 0xE74E, name: 'MailFilled' },
+      { code: 0xE750, name: 'AddFriend' },
+      { code: 0xE752, name: 'GoToStart' },
+      { code: 0xE758, name: 'World' },
+      { code: 0xE759, name: 'Comment' },
+      { code: 0xE75B, name: 'ChevronLeft' },
+      { code: 0xE75C, name: 'ChevronRight' },
+      { code: 0xE75D, name: 'InkingTool' },
+      { code: 0xE75E, name: 'Emoji2' },
+      { code: 0xE760, name: 'System' },
+      { code: 0xE761, name: 'Personalize' },
+      { code: 0xE762, name: 'Devices' },
+      { code: 0xE763, name: 'SearchAndApps' },
+      { code: 0xE764, name: 'Globe' },
+      { code: 0xE765, name: 'TimeLanguage' },
+      { code: 0xE766, name: 'EaseOfAccess' },
+      { code: 0xE767, name: 'UpdateRestore' },
+      { code: 0xE768, name: 'HangUp' },
+      { code: 0xE769, name: 'ContactInfo' },
+      { code: 0xE76A, name: 'Unpin' },
+      { code: 0xE76B, name: 'Contact' },
+      { code: 0xE76C, name: 'Memo' },
+      { code: 0xE76E, name: 'Paste' },
+      { code: 0xE771, name: 'Error' },
+      { code: 0xE773, name: 'Unlock' },
+      { code: 0xE774, name: 'Slideshow' },
+      { code: 0xE775, name: 'Calendar' },
+      { code: 0xE777, name: 'Megaphone' },
+      { code: 0xE779, name: 'NewWindow2' },
+      { code: 0xE77A, name: 'SaveLocal' },
+      { code: 0xE77B, name: 'Color' },
+      { code: 0xE77F, name: 'Effects' },
+      { code: 0xE7C1, name: 'Car' },
+      { code: 0xE7C3, name: 'Walk' },
+      { code: 0xE7F5, name: 'Fingerprint' },
+      { code: 0xE7F7, name: 'ChromeBack' },
+      { code: 0xE7F8, name: 'ChromeForward' },
+      { code: 0xE7F9, name: 'ChromeRefresh' },
+      { code: 0xE7FA, name: 'ChromeShare' },
+      { code: 0xE7FB, name: 'ChromeBookmarks' },
+      { code: 0xE7FE, name: 'ChromeHome' },
+      { code: 0xE801, name: 'ChromeClose' },
+      { code: 0xE802, name: 'ChromeMinimize' },
+      { code: 0xE803, name: 'ChromeMaximize' },
+      { code: 0xE804, name: 'ChromeRestore' },
+      { code: 0xE805, name: 'Paste2' },
+      { code: 0xE806, name: 'Cut' },
+      { code: 0xE807, name: 'Copy' },
+      { code: 0xE808, name: 'Important' },
+      { code: 0xE809, name: 'MailReply' },
+      { code: 0xE80A, name: 'Sort' },
+      { code: 0xE80E, name: 'OpenFile' },
+      { code: 0xE810, name: 'FontDecrease' },
+      { code: 0xE811, name: 'FontIncrease' },
+      { code: 0xE812, name: 'FontSize' },
+      { code: 0xE813, name: 'CellPhone' },
+      { code: 0xE815, name: 'Tag' },
+      { code: 0xE816, name: 'RepeatOne' },
+      { code: 0xE817, name: 'RepeatAll' },
+      { code: 0xE818, name: 'OutlineStar' },
+      { code: 0xE819, name: 'SolidStar' },
+      { code: 0xE81A, name: 'Calculator' },
+      { code: 0xE81B, name: 'Directions' },
+      { code: 0xE81C, name: 'Target' },
+      { code: 0xE81D, name: 'Library' },
+      { code: 0xE822, name: 'BackToWindow' },
+      { code: 0xE823, name: 'FullScreen' },
+      { code: 0xE824, name: 'NewFolder' },
+      { code: 0xE829, name: 'SwitchApps' },
+      { code: 0xE830, name: 'Highlight' },
+      { code: 0xE833, name: 'Italic' },
+      { code: 0xE834, name: 'Underline' },
+      { code: 0xE835, name: 'Bold' },
+      { code: 0xE836, name: 'MoveToFolder' },
+      { code: 0xE839, name: 'Like' },
+      { code: 0xE83A, name: 'AlignRight' },
+      { code: 0xE83B, name: 'AlignCenter' },
+      { code: 0xE83C, name: 'AlignLeft' },
+      { code: 0xE83F, name: 'OpenWith' },
+      { code: 0xE840, name: 'Rotate' },
+      { code: 0xE841, name: 'Shuffle' },
+      { code: 0xE842, name: 'Movies' },
+      { code: 0xE846, name: 'Folder' },
+      { code: 0xE847, name: 'Picture' },
+      { code: 0xE850, name: 'Bookmarks' },
+      { code: 0xE851, name: 'Document' },
+      { code: 0xE853, name: 'OpenInNewWindow' },
+      { code: 0xE855, name: 'ViewAll' },
+      { code: 0xE858, name: 'Rename' },
+      { code: 0xE86F, name: 'Undo' },
+      { code: 0xE870, name: 'Redo' },
+      { code: 0xE875, name: 'ChevronUpSmall' },
+      { code: 0xE876, name: 'ChevronDownSmall' },
+      { code: 0xE877, name: 'ChevronLeftSmall' },
+      { code: 0xE878, name: 'ChevronRightSmall' },
+      { code: 0xE881, name: 'Reply' },
+      { code: 0xE884, name: 'CommandPrompt' },
+      { code: 0xE886, name: 'MultiSelect' },
+      { code: 0xE887, name: 'KeyboardClassic' },
+      { code: 0xE888, name: 'Play' },
+      { code: 0xE889, name: 'Pause' },
+      { code: 0xE897, name: 'CallForwarding' },
+      { code: 0xE899, name: 'Home' },
+      { code: 0xE89D, name: 'IncidentTriangle' },
+      { code: 0xE8A3, name: 'History' },
+      { code: 0xE8A4, name: 'Location' },
+      { code: 0xE8A5, name: 'MapLayers' },
+      { code: 0xE8A7, name: 'DockLeft' },
+      { code: 0xE8A8, name: 'DockRight' },
+      { code: 0xE8A9, name: 'DockBottom' },
+      { code: 0xE8AB, name: 'Repair' },
+      { code: 0xE8AC, name: 'Accounts' },
+      { code: 0xE8AD, name: 'DullSound' },
+      { code: 0xE8B0, name: 'Manage' },
+      { code: 0xE8B1, name: 'Street' },
+      { code: 0xE8B5, name: 'Printer3D' },
+      { code: 0xE8B7, name: 'RadioBullet' },
+      { code: 0xE8B8, name: 'Stopwatch' },
+      { code: 0xE8B9, name: 'Photo' },
+      { code: 0xE8BA, name: 'ActionCenter' },
+      { code: 0xE8BB, name: 'FullCircleMask' },
+      { code: 0xE8BC, name: 'ChromeMinimize2' },
+      { code: 0xE8BD, name: 'ChromeMaximize2' },
+      { code: 0xE8BE, name: 'ChromeRestore2' },
+      { code: 0xE8BF, name: 'ChromeClose2' },
+      { code: 0xE8C0, name: 'Page2' },
+      { code: 0xE8C1, name: 'StatusCircle' },
+      { code: 0xE8C4, name: 'Diagnostic' },
+      { code: 0xE8C6, name: 'Process' },
+      { code: 0xE8C8, name: 'DisconnectDisplay' },
+      { code: 0xE8C9, name: 'Info2' },
+      { code: 0xE8CB, name: 'Body' },
+      { code: 0xE8CC, name: 'AsteriskBadge12' },
+      { code: 0xE8D1, name: 'PointingHand' },
+      { code: 0xE8D2, name: 'Presentation2' },
+      { code: 0xE8D3, name: 'DeclineCall' },
+      { code: 0xE8D4, name: 'Diagnostic2' },
+      { code: 0xE8D5, name: 'Equalizer' },
+      { code: 0xE8D6, name: 'Process2' },
+      { code: 0xE8D7, name: 'Processing' },
+      { code: 0xE8D8, name: 'Product' },
+      { code: 0xE8DE, name: 'SaveCopy' },
+      { code: 0xE8E0, name: 'List' },
+      { code: 0xE8E1, name: 'Asterisk' },
+      { code: 0xE8E2, name: 'ErrorBadge' },
+      { code: 0xE8E3, name: 'ReadingList' },
+      { code: 0xE8E4, name: 'Favicon2' },
+      { code: 0xE8E5, name: 'Favicon' },
+      { code: 0xE8E6, name: 'Key' },
+      { code: 0xE8E7, name: 'Permissions2' },
+      { code: 0xE8E8, name: 'Highlight2' },
+      { code: 0xE8EC, name: 'Dictionary' },
+      { code: 0xE8EE, name: 'Status' },
+      { code: 0xE8F0, name: 'Download' },
+      { code: 0xE8F1, name: 'Help' },
+      { code: 0xE8F2, name: 'Upload' },
+      { code: 0xE8F3, name: 'Emoji' },
+      { code: 0xE8F4, name: 'TwoPage' },
+      { code: 0xE8F5, name: 'LeaveChat' },
+      { code: 0xE8F6, name: 'MailForward' },
+      { code: 0xE8F7, name: 'RotateCamera2' },
+      { code: 0xE8F8, name: 'RedEye' },
+      { code: 0xE8F9, name: 'SetTile' },
+      { code: 0xE8FA, name: 'VerticalBattery0' },
+      { code: 0xE8FB, name: 'VerticalBattery1' },
+      { code: 0xE904, name: 'VerticalBattery10' },
+      { code: 0xE905, name: 'VerticalBatteryCharging0' },
+      { code: 0xE912, name: 'VerticalBatteryUnknown' },
+      { code: 0xE913, name: 'SIPMove' },
+      { code: 0xE914, name: 'SIPUndock' },
+      { code: 0xE915, name: 'SIPRedock' },
+      { code: 0xE916, name: 'EraseTool' },
+      { code: 0xE917, name: 'EraseTool2' },
+      { code: 0xE918, name: 'Dictionary2' },
+      { code: 0xE919, name: 'ExpandTile' },
+      { code: 0xE91A, name: 'ReduceTile' },
+      { code: 0xE91B, name: 'PenWorkspace' },
+      { code: 0xE91C, name: 'Export' },
+      { code: 0xE91F, name: 'Picture2' },
+      { code: 0xE920, name: 'ChromeAnnotate2' },
+      { code: 0xE921, name: 'ChromeAnnotateFill2' },
+      { code: 0xE922, name: 'ChromeFullScreen' },
+      { code: 0xE923, name: 'ChromeFullScreenExit' },
+      { code: 0xE924, name: 'KeyboardStandard' },
+      { code: 0xE925, name: 'KeyboardDismiss' },
+      { code: 0xE926, name: 'Completed' },
+      { code: 0xE927, name: 'ChromeAnnotate3' },
+      { code: 0xE928, name: 'Label' },
+      { code: 0xE929, name: 'IBeam' },
+      { code: 0xE92C, name: 'ArrowUp8' },
+      { code: 0xE92D, name: 'ArrowDown8' },
+      { code: 0xE92E, name: 'ArrowRight8' },
+      { code: 0xE92F, name: 'ArrowLeft8' },
+      { code: 0xE930, name: 'QuarentinedItems' },
+      { code: 0xE931, name: 'QuarentinedItemsMirrored' },
+      { code: 0xE932, name: 'Protractor' },
+      { code: 0xE933, name: 'ChecklistMirrored' },
+      { code: 0xE934, name: 'StatusCircle2' },
+      { code: 0xE935, name: 'StatusCircleCheckmark2' },
+      { code: 0xE936, name: 'StatusCircleInfo2' },
+      { code: 0xE937, name: 'StatusCircleBlock2' },
+      { code: 0xE938, name: 'StatusCircleQuestionMark2' },
+      { code: 0xE939, name: 'StatusCircleSync2' },
+      { code: 0xE93C, name: 'Dial' },
+      { code: 0xE93E, name: 'DialShape' },
+      { code: 0xE943, name: 'ClosedCaptionsInternational' },
+      { code: 0xE944, name: 'TollSolid2' },
+      { code: 0xE945, name: 'TrafficCongestionSolid2' },
+      { code: 0xE946, name: 'ExploreContent' },
+      { code: 0xE947, name: 'Blocked' },
+      { code: 0xE948, name: 'PermissionsSolid' },
+      { code: 0xE949, name: 'GripperBarVertical2' },
+      { code: 0xE94A, name: 'HeartFill' },
+      { code: 0xE94B, name: 'Badge' },
+      { code: 0xE950, name: 'NetworkTower' },
+      { code: 0xE951, name: 'CityNext' },
+      { code: 0xE952, name: 'CityNext2' },
+      { code: 0xE953, name: 'Courthouse' },
+      { code: 0xE95A, name: 'RibbonStar' },
+      { code: 0xE95B, name: 'Heart' },
+      { code: 0xE95D, name: 'HeartBroken' },
+      { code: 0xE960, name: 'Streaming' },
+      { code: 0xE961, name: 'MyNetwork' },
+      { code: 0xE968, name: 'StatusConnecting1' },
+      { code: 0xE969, name: 'StatusConnecting2' },
+      { code: 0xE96A, name: 'StatusUnsecure' },
+      { code: 0xE96D, name: 'WifiWarning4' },
+      { code: 0xE97A, name: 'Devices3' },
+      { code: 0xE97B, name: 'SlowEthernet' },
+      { code: 0xE97C, name: 'NetworkConnected' },
+      { code: 0xE97D, name: 'NetworkConnectedCheckmark' },
+      { code: 0xE990, name: 'SignalBars1' },
+      { code: 0xE991, name: 'SignalBars2' },
+      { code: 0xE992, name: 'SignalBars3' },
+      { code: 0xE993, name: 'SignalBars4' },
+      { code: 0xE994, name: 'SignalBars5' },
+      { code: 0xE995, name: 'SignalNotConnected' },
+      { code: 0xE9CE, name: 'Shield' },
+      { code: 0xE9D5, name: 'Info3' },
+      { code: 0xE9D9, name: 'AreaChart' },
+      { code: 0xE9F5, name: 'Photo2' },
+      { code: 0xEA14, name: 'MusicAlbum' },
+      { code: 0xEA18, name: 'Streaming2' },
+      { code: 0xEA1F, name: 'Code' },
+      { code: 0xEA21, name: 'ReturnToWindow' },
+      { code: 0xEA24, name: 'LightningBolt' },
+      { code: 0xEA35, name: 'EatDrink' },
+      { code: 0xEA37, name: 'Trackers2' },
+      { code: 0xEA3A, name: 'DateTimeMirrored' },
+      { code: 0xEA40, name: 'Stopwatch2' },
+      { code: 0xEA41, name: 'Photo3' },
+      { code: 0xEA42, name: 'Feedback' },
+      { code: 0xEA44, name: 'Subtitles' },
+      { code: 0xEA47, name: 'Dialpad' },
+      { code: 0xEA49, name: 'TouchpadOn' },
+      { code: 0xEA4A, name: 'TouchpadOff' },
+      { code: 0xEA55, name: 'Piano' },
+      { code: 0xEA56, name: 'NotePinned' },
+      { code: 0xEA80, name: 'BrushSize' },
+      { code: 0xEA86, name: 'NarratorForward' },
+      { code: 0xEA87, name: 'NarratorForwardMirrored' },
+      { code: 0xEA8F, name: 'SyncBadge12' },
+      { code: 0xEA90, name: 'RingerBadge12' },
+      { code: 0xEA91, name: 'AsteriskBadge12_2' },
+      { code: 0xEA92, name: 'ErrorBadge12' },
+      { code: 0xEA93, name: 'CircleRing12' },
+      { code: 0xEA94, name: 'CircleFill12' },
+      { code: 0xEA97, name: 'PuncKey0' },
+      { code: 0xEA98, name: 'PuncKeyLeftBottom' },
+      { code: 0xEB05, name: 'CalligraphyPen' },
+      { code: 0xEB0F, name: 'ReplyMirrored' },
+      { code: 0xEB10, name: 'LockscreenDesktop' },
+      { code: 0xEB11, name: 'TaskViewSettings' },
+      { code: 0xEB3C, name: 'MiniExpand2Mirrored' },
+      { code: 0xEB3D, name: 'MiniContract2Mirrored' },
+      { code: 0xEB41, name: 'QRCode' },
+      { code: 0xEB42, name: 'Feedback2' },
+      { code: 0xEB44, name: 'StatusPause7' },
+      { code: 0xEB47, name: 'Lock2' },
+      { code: 0xEB48, name: 'AutoEnhanceOn' },
+      { code: 0xEB49, name: 'AutoEnhanceOff' },
+      { code: 0xEB4D, name: 'Color2' },
+      { code: 0xEB51, name: 'SaveAs2' },
+      { code: 0xEB52, name: 'Light2' },
+      { code: 0xEB55, name: 'PDF' },
+      { code: 0xEB56, name: 'CloudUpload' },
+      { code: 0xEB57, name: 'CloudDownload' },
+      { code: 0xEB5A, name: 'BulletedList' },
+      { code: 0xEB5B, name: 'BulletedListMirrored' },
+      { code: 0xEB5E, name: 'Relationship' },
+      { code: 0xEB5F, name: 'PhotoCollection' },
+      { code: 0xEB60, name: 'CloudSearch' },
+      { code: 0xEB61, name: 'AlbumRemove' },
+      { code: 0xEB62, name: 'MessageFill' },
+      { code: 0xEB63, name: 'TabletSelected' },
+      { code: 0xEB64, name: 'MobileSelected' },
+      { code: 0xEB65, name: 'LaptopSelected' },
+      { code: 0xEB66, name: 'TVMonitorSelected' },
+      { code: 0xEB67, name: 'DeveloperTools' },
+      { code: 0xEB68, name: 'InsertTextBox' },
+      { code: 0xEB69, name: 'LowerBrightness' },
+      { code: 0xEB6D, name: 'CloudPrinter' },
+      { code: 0xEB6E, name: 'XboxOneConsole' },
+      { code: 0xEB70, name: 'Volume0' },
+      { code: 0xEB71, name: 'Volume1' },
+      { code: 0xEB72, name: 'Volume2' },
+      { code: 0xEB73, name: 'Volume3' },
+      { code: 0xEB7E, name: 'Battery0Bar' },
+      { code: 0xEB7F, name: 'Battery1Bar' },
+      { code: 0xEB80, name: 'Battery2Bar' },
+      { code: 0xEB81, name: 'Battery3Bar' },
+      { code: 0xEB82, name: 'Battery4Bar' },
+      { code: 0xEB83, name: 'Battery5Bar' },
+      { code: 0xEB84, name: 'Battery6Bar' },
+      { code: 0xEB85, name: 'Battery7Bar' },
+      { code: 0xEB86, name: 'Battery8Bar' },
+      { code: 0xEB87, name: 'Battery9Bar' },
+      { code: 0xEB88, name: 'Battery10Bar' },
+      { code: 0xEB90, name: 'PointErase' },
+      { code: 0xEB91, name: 'PointEraseSmall' },
+      { code: 0xEB95, name: 'StrokeErase' },
+      { code: 0xEB96, name: 'StrokeEraseSmall' },
+      { code: 0xEB9D, name: 'InkingCaret' },
+      { code: 0xEB9F, name: 'InkingColorOutline' },
+      { code: 0xEBA0, name: 'InkingColorFill' },
+      { code: 0xEBC3, name: 'HardDrive' },
+      { code: 0xEBC4, name: 'NetworkAdapter' },
+      { code: 0xEBC5, name: 'Touchscreen' },
+      { code: 0xEBC6, name: 'NetworkPrinter' },
+      { code: 0xEBD2, name: 'CloudPrinter2' },
+      { code: 0xEBD3, name: 'Printer' },
+      { code: 0xEBD4, name: 'PrinterFill' },
+      { code: 0xEBD5, name: 'CommandPrompt2' },
+      { code: 0xEBDE, name: 'Unknown' },
+      { code: 0xEBE8, name: 'AreaChart2' },
+      { code: 0xEBFC, name: 'Video2' },
+      { code: 0xEC05, name: 'Game' },
+      { code: 0xEC06, name: 'HorizontalTabKey' },
+      { code: 0xEC11, name: 'StreetsideSplitMinimize2' },
+      { code: 0xEC12, name: 'StreetsideSplitExpand2' },
+      { code: 0xEC13, name: 'Car3' },
+      { code: 0xEC14, name: 'Walk3' },
+      { code: 0xEC15, name: 'Bus4' },
+      { code: 0xEC24, name: 'Ferry2' },
+      { code: 0xEC25, name: 'HighlightFill2' },
+      { code: 0xEC27, name: 'ArrowUp' },
+      { code: 0xEC28, name: 'ArrowDown' },
+      { code: 0xEC29, name: 'ArrowRight' },
+      { code: 0xEC2A, name: 'ArrowLeft' },
+      { code: 0xEC32, name: 'News' },
+      { code: 0xEC37, name: 'Chat' },
+      { code: 0xEC3B, name: 'Group' },
+      { code: 0xEC42, name: 'Money' },
+      { code: 0xEC44, name: 'WindowsInsider' },
+      { code: 0xEC4E, name: 'PowerButton' },
+      { code: 0xEC4F, name: 'ResizeMouseSmall' },
+      { code: 0xEC50, name: 'ResizeMouseMedium' },
+      { code: 0xEC51, name: 'ResizeMouseWide' },
+      { code: 0xEC52, name: 'ResizeMouseTall' },
+      { code: 0xEC53, name: 'ResizeMouseLarge' },
+      { code: 0xEC54, name: 'ResizeTouchNarrower' },
+      { code: 0xEC55, name: 'ResizeTouchShorter' },
+      { code: 0xEC56, name: 'DrivingMode' },
+      { code: 0xEC57, name: 'RingtoneSilent' },
+      { code: 0xEC58, name: 'OtherUser' },
+      { code: 0xEC59, name: 'Admin' },
+      { code: 0xEC5E, name: 'CC' },
+      { code: 0xEC60, name: 'SDCard' },
+      { code: 0xEC61, name: 'CallForwardingMirrored' },
+      { code: 0xEC64, name: 'SettingsDisplaySound' },
+      { code: 0xEC6C, name: 'TVMonitor' },
+      { code: 0xEC6D, name: 'Speakers' },
+      { code: 0xEC71, name: 'Headphone' },
+      { code: 0xEC72, name: 'DeviceLaptopPic' },
+      { code: 0xEC74, name: 'DeviceLaptopNoPic' },
+      { code: 0xEC75, name: 'Game2' },
+      { code: 0xEC76, name: 'AsteriskBadge12_3' },
+      { code: 0xEC7A, name: 'DialUp' },
+      { code: 0xEC7E, name: 'Language' },
+      { code: 0xEC80, name: 'WifiHotspot' },
+      { code: 0xEC87, name: 'Input' },
+      { code: 0xEC92, name: 'MicOff' },
+      { code: 0xECA5, name: 'ConstructionCone' },
+      { code: 0xECA7, name: 'ShieldCheckmark' },
+      { code: 0xECAD, name: 'Puzzle' },
+      { code: 0xECB9, name: 'ScreenTime' },
+      { code: 0xECC4, name: 'Headset' },
+      { code: 0xECC5, name: 'Health' },
+      { code: 0xECC8, name: 'Webcam2' },
+      { code: 0xECCA, name: 'Input2' },
+      { code: 0xECCC, name: 'NFC' },
+      { code: 0xECF0, name: 'Audio' },
+      { code: 0xECF1, name: 'MicOff2' },
+      { code: 0xED0C, name: 'EdgeLogo' },
+      { code: 0xED0D, name: 'ComposeMode' },
+      { code: 0xED0E, name: 'ExpressiveInputEntry' },
+      { code: 0xED10, name: 'EmojiTabMoreSymbols' },
+      { code: 0xED11, name: 'EmojiTabFavorites' },
+      { code: 0xED15, name: 'EmojiSwatch' },
+      { code: 0xED1E, name: 'ConnectApp' },
+      { code: 0xED28, name: 'CompanionDeviceFramework' },
+      { code: 0xED2E, name: 'Ruler' },
+      { code: 0xED2F, name: 'FingerInking' },
+      { code: 0xED30, name: 'StrokeErase2' },
+      { code: 0xED31, name: 'PointErase2' },
+      { code: 0xED32, name: 'ClearAllInk' },
+      { code: 0xED35, name: 'Pencil' },
+      { code: 0xED36, name: 'Marker' },
+      { code: 0xED37, name: 'InkingCaret2' },
+      { code: 0xED39, name: 'InkingColorOutline2' },
+      { code: 0xED3A, name: 'InkingColorFill2' },
+      { code: 0xED41, name: 'SnapSurface' },
+      { code: 0xED42, name: 'TouchWriting' },
+      { code: 0xED43, name: 'PenPalette' },
+      { code: 0xED44, name: 'HighlightFill' },
+      { code: 0xED47, name: 'BandBattery0' },
+      { code: 0xED48, name: 'BandBattery1' },
+      { code: 0xED49, name: 'BandBattery2' },
+      { code: 0xED4A, name: 'BandBattery3' },
+      { code: 0xED4B, name: 'BandBattery4' },
+      { code: 0xED4C, name: 'BandBattery5' },
+      { code: 0xED4D, name: 'BandBattery6' },
+      { code: 0xED56, name: 'AddSurfaceHub' },
+      { code: 0xED57, name: 'DevUpdate' },
+      { code: 0xED58, name: 'Unit' },
+      { code: 0xED59, name: 'AddTo' },
+      { code: 0xED5A, name: 'RemoveFrom' },
+      { code: 0xED5B, name: 'RadioBtnOff' },
+      { code: 0xED5C, name: 'RadioBtnOn' },
+      { code: 0xED61, name: 'ExploitProtectionSettings' },
+      { code: 0xED62, name: 'KeyboardNarrow' },
+      { code: 0xED63, name: 'Keyboard12Key' },
+      { code: 0xED64, name: 'KeyboardDock' },
+      { code: 0xED65, name: 'KeyboardUndock' },
+      { code: 0xED66, name: 'KeyboardLeftDock' },
+      { code: 0xED67, name: 'KeyboardRightDock' },
+      { code: 0xED68, name: 'Ear' },
+      { code: 0xED69, name: 'PointerHand' },
+      { code: 0xED6A, name: 'Bullseye2' },
+      { code: 0xED6C, name: 'DocumentApproval' },
+      { code: 0xEDAD, name: 'KnowledgeArticle' },
+      { code: 0xEDB1, name: 'Relationship2' },
+      { code: 0xEDB3, name: 'DetachablePC' },
+      { code: 0xEDB4, name: 'LeftStick' },
+      { code: 0xEDB5, name: 'RightStick' },
+      { code: 0xEDB6, name: 'TriggerLeft' },
+      { code: 0xEDB7, name: 'TriggerRight' },
+      { code: 0xEDB8, name: 'BumperLeft' },
+      { code: 0xEDB9, name: 'BumperRight' },
+      { code: 0xEDBA, name: 'Dpad' },
+      { code: 0xEDE1, name: 'EnglishPunctuation' },
+      { code: 0xEDE2, name: 'ChinesePunctuation' },
+      { code: 0xEDE3, name: 'HMD' },
+      { code: 0xEDE4, name: 'CtrlSpatialRight' },
+      { code: 0xEF15, name: 'PenWorkspaceMirrored' },
+      { code: 0xEF16, name: 'PenPaletteMirrored' },
+      { code: 0xEF17, name: 'StrokeEraseMirrored' },
+      { code: 0xEF18, name: 'PointEraseMirrored' },
+      { code: 0xEF19, name: 'ClearAllInkMirrored' },
+      { code: 0xEF1F, name: 'BackgroundToggle' },
+      { code: 0xEF20, name: 'Marquee' },
+      { code: 0xF000, name: 'KnobVolume' },
+      { code: 0xF003, name: 'Checkbox3' },
+      { code: 0xF004, name: 'CheckboxComposite3' },
+      { code: 0xF005, name: 'CheckboxIndeterminate3' },
+      { code: 0xF006, name: 'CheckboxCompositeReversed3' },
+      { code: 0xF0AD, name: 'MicClipping' },
+      { code: 0xF0B2, name: 'Player' },
+      { code: 0xF0B3, name: 'PlayerSettings' },
+      { code: 0xF0B6, name: 'Placeholder' },
+      { code: 0xF0C6, name: 'LockFeedback' },
+      { code: 0xF0CA, name: 'InkingToolFill2' },
+      { code: 0xF0D2, name: 'View' },
+      { code: 0xF0E2, name: 'HighlightFill3' },
+      { code: 0xF0E3, name: 'Previous' },
+      { code: 0xF0E4, name: 'Next' },
+      { code: 0xF0E5, name: 'Clear' },
+      { code: 0xF0E6, name: 'Sync' },
+      { code: 0xF108, name: 'BlockedSite' },
+      { code: 0xF119, name: 'LeftQuote' },
+      { code: 0xF11A, name: 'RightQuote' },
+      { code: 0xF126, name: 'News2' },
+      { code: 0xF127, name: 'News3' },
+      { code: 0xF133, name: 'CtrlSpatialLeft' },
+      { code: 0xF136, name: 'StorageOptical' },
+      { code: 0xF138, name: 'Communications' },
+      { code: 0xF139, name: 'Headset2' },
+      { code: 0xF13D, name: 'Projector' },
+      { code: 0xF13E, name: 'Health2' },
+      { code: 0xF140, name: 'Webcam3' },
+      { code: 0xF141, name: 'Input3' },
+      { code: 0xF142, name: 'Mouse' },
+      { code: 0xF143, name: 'Smartcard' },
+      { code: 0xF144, name: 'SmartcardVirtual' },
+      { code: 0xF146, name: 'MediaCast' },
+      { code: 0xF147, name: 'LAN' },
+      { code: 0xF148, name: 'WAN' },
+      { code: 0xF149, name: 'Cloud' },
+      { code: 0xF14A, name: 'Cloud2' },
+      { code: 0xF14B, name: 'Cloud3' },
+      { code: 0xF14C, name: 'Cloud4' },
+      { code: 0xF14D, name: 'Cloud5' },
+      { code: 0xF14E, name: 'Cloud6' },
+      { code: 0xF150, name: 'Ethernet' },
+      { code: 0xF156, name: 'DataUsage' },
+      { code: 0xF161, name: 'AccessPoint' },
+      { code: 0xF163, name: 'Defrag' },
+      { code: 0xF164, name: 'DeviceDiscovery' },
+      { code: 0xF167, name: 'SecurityGroup' },
+      { code: 0xF168, name: 'ServerDirectory' },
+      { code: 0xF169, name: 'Process3' },
+      { code: 0xF16A, name: 'Process4' },
+      { code: 0xF16B, name: 'AdjustHologram' },
+      { code: 0xF175, name: 'Developer' },
+      { code: 0xF17D, name: 'Speakers2' },
+      { code: 0xF17E, name: 'Headphone2' },
+      { code: 0xF180, name: 'WindowsInsider2' },
+      { code: 0xF182, name: 'Input4' },
+    ];
+
+    function renderIcons(icons, containerId) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      icons.forEach(icon => {
+        const card = document.createElement('div');
+        card.className = 'icon-card';
+        card.dataset.name = icon.name.toLowerCase();
+        card.dataset.code = icon.code.toString(16).toUpperCase();
+        const hex = icon.code.toString(16).toUpperCase().padStart(4, '0');
+        card.innerHTML = `
+          <div class="icon-glyph">${String.fromCharCode(icon.code)}</div>
+          <div class="icon-name">${icon.name}</div>
+          <div class="icon-code">&#x${hex}; / U+${hex}</div>
+        `;
+        card.title = `Click to copy: &#x${hex};`;
+        card.addEventListener('click', () => {
+          const entity = `&#x${hex};`;
+          navigator.clipboard.writeText(entity).then(() => {
+            showToast(`Copied: ${entity} (${icon.name})`);
+            card.classList.add('copied');
+            setTimeout(() => card.classList.remove('copied'), 600);
+          });
+        });
+        container.appendChild(card);
+      });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1500);
+    }
+
+    // Search functionality
+    document.getElementById('search').addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase().trim();
+      document.querySelectorAll('.icon-card').forEach(card => {
+        const name = card.dataset.name || '';
+        const code = card.dataset.code || '';
+        const match = !query || name.includes(query) || code.toLowerCase().includes(query);
+        card.style.display = match ? '' : 'none';
+      });
+    });
+
+    // Render on load
+    renderIcons(appIcons, 'app-icons');
+    renderIcons(allIcons, 'all-icons');
+    document.getElementById('app-count').textContent = appIcons.length + ' icons';
+    document.getElementById('all-count').textContent = allIcons.length + ' icons';
+  </script>
+
+</body>
+</html>

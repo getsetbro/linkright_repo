@@ -17,7 +17,7 @@ body {
   font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
   font-size: 14px;
   line-height: 1.5;
-  background-color: transparent;
+  background-color: #0d0d1f;
   color: #f0eeff;
 }
 
@@ -148,7 +148,7 @@ select {
   min-width: 7rem;
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239b8ec4' d='M2.5 4.5L6 8l3.5-3.5'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%239b8ec4' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
   background-size: 12px;

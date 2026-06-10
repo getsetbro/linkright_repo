@@ -1,5 +1,27 @@
 export namespace main {
 	
+	export class AppRedirect {
+	    id: string;
+	    name: string;
+	    scheme: string;
+	    domains: string[];
+	    enabled: boolean;
+	    isAvailable: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new AppRedirect(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.scheme = source["scheme"];
+	        this.domains = source["domains"];
+	        this.enabled = source["enabled"];
+	        this.isAvailable = source["isAvailable"];
+	    }
+	}
 	export class AppStatus {
 	    isRegistered: boolean;
 	    isDefaultBrowser: boolean;
@@ -162,6 +184,7 @@ export namespace main {
 	    pickerSettings: PickerSettings;
 	    customBrowsers: Browser[];
 	    archivedBrowserPaths: string[];
+	    enabledAppRedirects: string[];
 	
 	    static createFrom(source: any = {}) {
 	        return new Config(source);
@@ -177,6 +200,7 @@ export namespace main {
 	        this.pickerSettings = this.convertValues(source["pickerSettings"], PickerSettings);
 	        this.customBrowsers = this.convertValues(source["customBrowsers"], Browser);
 	        this.archivedBrowserPaths = source["archivedBrowserPaths"];
+	        this.enabledAppRedirects = source["enabledAppRedirects"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -196,6 +220,48 @@ export namespace main {
 		    }
 		    return a;
 		}
+	}
+	export class DefsStatus {
+	    version: number;
+	    updated: string;
+	    source: string;
+	    sourceUrl: string;
+	    hasPrevious: boolean;
+	    lastChecked: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new DefsStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.version = source["version"];
+	        this.updated = source["updated"];
+	        this.source = source["source"];
+	        this.sourceUrl = source["sourceUrl"];
+	        this.hasPrevious = source["hasPrevious"];
+	        this.lastChecked = source["lastChecked"];
+	    }
+	}
+	export class DefsUpdateResult {
+	    available: boolean;
+	    newVersion: number;
+	    newUpdated: string;
+	    newNotes: string;
+	    error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new DefsUpdateResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.available = source["available"];
+	        this.newVersion = source["newVersion"];
+	        this.newUpdated = source["newUpdated"];
+	        this.newNotes = source["newNotes"];
+	        this.error = source["error"];
+	    }
 	}
 	export class PickerRequest {
 	    url: string;

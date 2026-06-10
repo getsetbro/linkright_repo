@@ -47,14 +47,15 @@ type PickerSettings struct {
 
 // Config is the root configuration stored in JSON
 type Config struct {
-	DefaultBrowser      string          `json:"defaultBrowser"`
-	DefaultProfile      string          `json:"defaultProfile"`
-	FallbackBehavior    string          `json:"fallbackBehavior"`    // "picker" or "default"
-	Rules               []Rule          `json:"rules"`
-	FirstRun            bool            `json:"firstRun"`
-	PickerSettings      PickerSettings  `json:"pickerSettings"`
-	CustomBrowsers      []Browser       `json:"customBrowsers"`      // user-added custom browsers (legacy, kept for compat)
+	DefaultBrowser       string         `json:"defaultBrowser"`
+	DefaultProfile       string         `json:"defaultProfile"`
+	FallbackBehavior     string         `json:"fallbackBehavior"`    // "picker" or "default"
+	Rules                []Rule         `json:"rules"`
+	FirstRun             bool           `json:"firstRun"`
+	PickerSettings       PickerSettings `json:"pickerSettings"`
+	CustomBrowsers       []Browser      `json:"customBrowsers"`      // user-added custom browsers (legacy, kept for compat)
 	ArchivedBrowserPaths []string       `json:"archivedBrowserPaths"` // paths of browsers hidden from picker/rules
+	EnabledAppRedirects  []string       `json:"enabledAppRedirects"` // IDs of enabled app redirects e.g. ["figma","teams"]
 }
 
 // PickerRequest is sent to the frontend when the picker popup is needed
@@ -97,4 +98,15 @@ type ProtocolApp struct {
 	CommandLine string `json:"commandLine"` // full command line including %1 placeholder
 	ExePath     string `json:"exePath"`     // extracted executable path
 	IsAvailable bool   `json:"isAvailable"` // true if the exe exists on disk
-}
+}
+
+// AppRedirect represents a desktop app that can intercept web URLs and redirect
+// them to the native desktop application via protocol handlers.
+type AppRedirect struct {
+	ID          string   `json:"id"`          // unique identifier e.g. "figma", "teams"
+	Name        string   `json:"name"`        // display name e.g. "Figma"
+	Scheme      string   `json:"scheme"`      // protocol scheme e.g. "figma"
+	Domains     []string `json:"domains"`     // web domains to intercept e.g. ["figma.com"]
+	Enabled     bool     `json:"enabled"`     // whether this redirect is active
+	IsAvailable bool     `json:"isAvailable"` // whether the desktop app is installed
+}

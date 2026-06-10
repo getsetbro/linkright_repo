@@ -18,12 +18,13 @@ let state = {
   mode: 'settings',        // 'settings' | 'picker'
 
   // Settings UI
-  tab: 'general',          // 'general' | 'browsers' | 'rules'
+  tab: 'general',          // 'general' | 'browsers' | 'rules' | 'apps'
   browsers: [],            // all browsers (active + excluded), used in Browsers tab
   activeBrowsers: [],      // non-excluded browsers only, used in General tab + Rule editor
   rules: [],
   config: {},
   appStatus: {},
+  appRedirects: [],        // app redirect configurations
   validations: [],
   editingRule: null,
   dragSrcIndex: null,
@@ -114,6 +115,7 @@ window.addEventListener('load', async () => {
         state.config = config || {};
         state.appStatus = appStatus || {};
         state.validations = await App.ValidateRules().catch(() => []);
+        state.appRedirects = await App.GetAppRedirects().catch(() => []);
 
         // First-run: show welcome prompt if not yet set as default browser
         try {
@@ -245,7 +247,7 @@ function renderPickerMode() {
 
       ${data.warning ? `
       <div class="mx-4 mb-2 px-3 py-2 bg-yellow-900 border border-yellow-700 rounded-lg text-xs text-yellow-200">
-        <span style="font-family:'Segoe MDL2 Assets',sans-serif">&#xE89D;</span> ${esc(data.warning)}
+        ⚠ ${esc(data.warning)}
       </div>
       ` : ''}
 
@@ -431,6 +433,8 @@ function renderSettingsMode() {
         ${state.tab === 'general'  ? renderGeneral()  : ''}
         ${state.tab === 'browsers' ? renderBrowsers() : ''}
         ${state.tab === 'rules'    ? renderRules()    : ''}
+        ${state.tab === 'apps'     ? renderApps()     : ''}
+        ${state.tab === 'maintenance' ? renderMaintenance() : ''}
       </div>
     </div>
     ${state.editingRule !== null ? renderRuleEditorOverlay() : ''}
@@ -445,11 +449,7 @@ function renderFirstRunOverlay() {
   return `
     <div id="first-run-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[100] p-6">
       <div class="bg-surface rounded-2xl shadow-2xl w-full max-w-sm border border-border flex flex-col items-center text-center px-8 py-8 gap-5 fade-in">
-
-        <!-- Icon -->
         <div class="text-5xl leading-none" style="font-family:'Segoe MDL2 Assets',sans-serif">&#xE71B;</div>
-
-        <!-- Heading -->
         <div>
           <h1 class="text-lg font-bold text-text-primary mb-1">Welcome to Link Right</h1>
           <p class="text-sm text-text-secondary leading-relaxed">
@@ -457,15 +457,11 @@ function renderFirstRunOverlay() {
             To intercept all links, set it as your <strong class="text-text-primary">Windows default browser</strong>.
           </p>
         </div>
-
-        <!-- Steps -->
         <ol class="text-left text-xs text-text-secondary space-y-1.5 w-full bg-app-bg rounded-lg px-4 py-3">
           <li class="flex items-start gap-2"><span class="text-accent-light font-bold mt-px">1.</span><span>Click <strong class="text-text-primary">Set as Default…</strong> below</span></li>
           <li class="flex items-start gap-2"><span class="text-accent-light font-bold mt-px">2.</span><span>Find <strong class="text-text-primary">Link Right</strong> in the browser list</span></li>
           <li class="flex items-start gap-2"><span class="text-accent-light font-bold mt-px">3.</span><span>Click it to set as default — done!</span></li>
         </ol>
-
-        <!-- Buttons -->
         <div class="flex flex-col gap-2 w-full">
           <button id="btn-firstrun-set-default"
             class="w-full py-2.5 text-sm font-semibold text-white bg-accent hover:bg-accent-glow rounded-lg transition-colors">
@@ -532,9 +528,11 @@ function renderTabs() {
     { id: 'general',  label: 'General',  icon: '\uE713' }, // Settings
     { id: 'browsers', label: 'Browsers', icon: '\uE774' }, // Slideshow (globe-like)
     { id: 'rules',    label: 'Rules',    icon: '\uE71C' }, // Filter
+    { id: 'apps',     label: 'Apps',     icon: '\uE71D' }, // AllApps
+    { id: 'maintenance', label: 'Repair', icon: '\uE90F' }, // Repair
   ];
   return `
-    <div class="flex justify-center gap-1 py-2 border-b border-border bg-surface overflow-x-hidden">
+    <div class="flex justify-around gap-1 py-2 border-b border-border bg-surface overflow-x-hidden">
       ${tabs.map(t => `
         <button data-tab="${t.id}" class="flex flex-col items-center gap-0.5 px-3 py-1 rounded text-xs transition-colors min-w-0
           ${state.tab === t.id
@@ -560,49 +558,20 @@ function renderGeneral() {
       <section class="space-y-2">
         <h2 class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Default Browser Status</h2>
         <div class="bg-surface rounded-lg p-4 space-y-3">
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="text-sm font-medium text-text-primary">Default browser</div>
-              <div class="text-xs text-text-secondary">${s.isDefaultBrowser ? 'Link Right is the Windows default' : 'Not set as default'}</div>
-            </div>
-            <div class="flex items-center gap-2">
-              <button id="btn-refresh-default-status" title="Check default browser status"
-                class="flex items-center gap-1.5 px-2 py-1 text-xs text-text-secondary hover:text-text-primary hover:bg-surface-raised rounded transition-colors">
-                <span style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.9rem;">&#xE72C;</span>
-                <span>Refresh</span>
-              </button>
-              ${!s.isDefaultBrowser
-                ? `<button id="btn-set-default" class="px-3 py-1.5 text-xs bg-accent hover:bg-accent-glow text-white rounded transition-colors">Set as Default…</button>`
-                : `<span class="text-xs text-green-400 font-medium">✓ Active</span>`
-              }
-            </div>
+          <div class="text-xs">
+            To work Link Right must be set as the <strong class="text-text-secondary">Windows Default Browser</strong> to intercept and route links.
           </div>
-          <div class="text-xs text-text-muted border-t border-border pt-2 mt-1">
-            <span style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.85rem; vertical-align:middle;">&#xE946;</span>
-            Link Right must be set as the <strong class="text-text-secondary">Windows Default Browser</strong> to intercept and route links. Without this, clicking links will bypass Link Right entirely.
-          </div>
-        </div>
-      </section>
-
-      <section class="space-y-2">
-        <h2 class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Primary Browser ( and Profile )</h2>
-        <div class="bg-surface rounded-lg p-4">
-          <div class="flex gap-3">
-            <div class="flex-1">
-              <label class="text-xs text-text-secondary block mb-1">Browser</label>
-              <select id="sel-default-browser" class="w-full bg-surface-raised border border-border rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent">
-                <option value="">— None —</option>
-                ${state.activeBrowsers.map(b => `
-                  <option value="${esc(b.name)}" ${c.defaultBrowser === b.name ? 'selected' : ''}>${esc(b.name)}</option>
-                `).join('')}
-              </select>
-            </div>
-            <div id="default-profile-row" class="flex-1 ${c.defaultBrowser ? '' : 'invisible'}">
-              <label class="text-xs text-text-secondary block mb-1">Profile</label>
-              <select id="sel-default-profile" class="w-full bg-surface-raised border border-border rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent">
-                ${renderProfileOptions(c.defaultBrowser, c.defaultProfile)}
-              </select>
-            </div>
+          <div class="flex items-center gap-3">
+            ${!s.isDefaultBrowser
+              ? `<button id="btn-set-default" class="px-3 py-1.5 text-xs bg-accent hover:bg-accent-glow text-white rounded transition-colors">Set as Default…</button>`
+              : `<span class="text-xs text-green-400 font-medium">✓ Active</span>`
+            }
+            <div class="text-xs text-text-secondary">${s.isDefaultBrowser ? 'Link Right is the Windows default' : 'Not set as default'}</div>
+            <button id="btn-refresh-default-status" title="Check default browser status"
+              class="flex items-center gap-1.5 px-2 py-1 text-xs text-text-secondary hover:text-text-primary hover:bg-surface-raised rounded transition-colors">
+              <span style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.9rem;">&#xE72C;</span>
+              <span>Refresh</span>
+            </button>
           </div>
         </div>
       </section>
@@ -613,25 +582,47 @@ function renderGeneral() {
           <div class="text-xs text-text-secondary mb-3">When no rule matches a link:</div>
           <div class="flex gap-3">
             <label class="fallback-option flex-1 flex items-start gap-3 cursor-pointer rounded-lg p-3 border-2 border-border transition-colors">
-              <input type="radio" name="fallback" value="default"
-                ${(c.fallbackBehavior || 'default') === 'default' ? 'checked' : ''}>
-              <div>
-                <div class="text-sm text-text-primary font-medium">Use primary browser</div>
-              </div>
-            </label>
-            <label class="fallback-option flex-1 flex items-start gap-3 cursor-pointer rounded-lg p-3 border-2 border-border transition-colors">
               <input type="radio" name="fallback" value="picker"
-                ${(c.fallbackBehavior || 'default') === 'picker' ? 'checked' : ''}>
+                ${(c.fallbackBehavior || 'default') === 'picker' || state.activeBrowsers.length === 0 ? 'checked' : ''}>
               <div>
                 <div class="text-sm text-text-primary font-medium">Show browser picker</div>
                 <div class="text-xs text-text-secondary mt-0.5">Ask which browser to use each time</div>
+              </div>
+            </label>
+            <label class="fallback-option flex-1 flex items-start gap-3 ${state.activeBrowsers.length === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} rounded-lg p-3 border-2 border-border transition-colors">
+              <input type="radio" name="fallback" value="default"
+                ${state.activeBrowsers.length === 0 ? 'disabled' : ''}
+                ${(c.fallbackBehavior || 'default') === 'default' && state.activeBrowsers.length > 0 ? 'checked' : ''}>
+              <div>
+                <div class="text-sm text-text-primary font-medium">Use primary browser</div>
+                ${state.activeBrowsers.length === 0 ? '<div class="text-xs text-text-muted mt-0.5">No browsers available</div>' : ''}
               </div>
             </label>
           </div>
         </div>
       </section>
 
-
+      <section class="space-y-2">
+        <h2 class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Primary Browser &plus; Profile</h2>
+        <div class="bg-surface rounded-lg p-4">
+          <div class="flex gap-3">
+            <div class="flex-1">
+              <label class="text-xs text-text-secondary block mb-1">Browser</label>
+              <select id="sel-default-browser" class="w-full bg-surface-raised border border-border rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent">
+                ${state.activeBrowsers.map(b => `
+                  <option value="${esc(b.name)}" ${(c.defaultBrowser === b.name || (!c.defaultBrowser && b === state.activeBrowsers[0])) ? 'selected' : ''}>${esc(b.name)}</option>
+                `).join('')}
+              </select>
+            </div>
+            <div id="default-profile-row" class="flex-1">
+              <label class="text-xs text-text-secondary block mb-1">Profile</label>
+              <select id="sel-default-profile" class="w-full bg-surface-raised border border-border rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent">
+                ${renderProfileOptions(c.defaultBrowser || (state.activeBrowsers[0] && state.activeBrowsers[0].name) || '', c.defaultProfile)}
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   `;
 }
@@ -691,7 +682,6 @@ function renderBrowserRow(browser, index) {
     </div>
   `;
 }
-
 
 // ─── Rules Tab ────────────────────────────────────────────────────────────────
 function renderRules() {
@@ -766,6 +756,177 @@ function getRuleConditionSummary(rule) {
   }
   if (rule.pattern) return `link contains "${rule.pattern}"`;
   return 'No conditions';
+}
+
+// ─── Apps Tab ─────────────────────────────────────────────────────────────────
+function renderApps() {
+  const apps = state.appRedirects || [];
+  return `
+    <div class="flex flex-col h-full">
+      <div class="px-4 py-3">
+        <div class="text-xs text-text-secondary leading-relaxed">
+          This lets you open links <strong class="text-text-primary">to</strong> certain websites directly in their desktop app or in a specific browser.
+        </div>
+      </div>
+      <div class="border-y border-border px-4 py-3 bg-surface space-y-3">
+        <div class="flex flex-col gap-2">
+          <button id="btn-refresh-apps" title="Refresh app list"
+            class="flex items-center gap-1.5 px-2 py-1 text-xs text-text-secondary hover:text-text-primary hover:bg-surface-raised rounded transition-colors w-fit">
+            <span style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.9rem;">&#xE72C;</span>
+            <span>Refresh</span>
+          </button>
+        </div>
+      </div>
+      <div class="flex-1 overflow-y-auto">
+        ${apps.length === 0
+          ? `<div class="flex flex-col items-center justify-center h-40 text-text-muted text-sm gap-2">
+               <span class="text-3xl" style="font-family:'Segoe MDL2 Assets',sans-serif">&#xE71D;</span>
+               <span>No app redirects available</span>
+             </div>`
+          : apps.map(app => renderAppRow(app)).join('')
+        }
+      </div>
+    </div>
+  `;
+}
+
+function renderAppRow(app) {
+  const domains = (app.domains || []).join(', ');
+  const availClass = app.isAvailable ? 'text-green-400' : 'text-text-muted';
+  const availText = app.isAvailable ? 'Installed' : 'Not detected';
+  const availIcon = app.isAvailable ? '&#xE73E;' : '&#xE711;';
+  const disabledClass = !app.isAvailable ? 'opacity-50 cursor-not-allowed' : '';
+  const disabledAttr = !app.isAvailable ? 'disabled' : '';
+  const toggleTitle = !app.isAvailable
+    ? `${esc(app.name)} not detected — install the app to enable this redirect`
+    : `${app.enabled ? 'Disable' : 'Enable'} ${esc(app.name)} redirect`;
+
+  return `
+    <div class="app-row flex items-center gap-3 px-4 py-3 border-b border-border hover:bg-surface transition-colors ${!app.isAvailable ? 'opacity-70' : ''}">
+      <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-surface-raised">
+        <img src="${svgBrowser}" alt="${esc(app.name)}" style="width:20px;height:20px;" draggable="false">
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-medium text-text-primary">${esc(app.name)}</span>
+          <span class="text-[0.65rem] ${availClass} flex items-center gap-0.5">
+            <span style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.6rem;">${availIcon}</span>
+            ${esc(availText)}
+          </span>
+        </div>
+        <div class="text-xs text-text-muted truncate mt-0.5">${esc(domains)}</div>
+      </div>
+      <label class="toggle flex-shrink-0 ${disabledClass}" title="${toggleTitle}">
+        <input type="checkbox" class="app-redirect-toggle" data-app-id="${esc(app.id)}" ${app.enabled ? 'checked' : ''} ${disabledAttr}>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  `;
+}
+
+// ─── Maintenance Tab ──────────────────────────────────────────────────────────
+function renderMaintenance() {
+  return `
+    <div class="p-5 space-y-5 overflow-y-auto h-full" id="maintenance-tab">
+
+      <section class="space-y-2">
+        <h2 class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Browser Definitions</h2>
+        <div class="bg-surface rounded-lg p-4 space-y-3">
+          <div class="text-xs text-text-secondary leading-relaxed">
+            Browser definitions control how Link Right detects and launches browsers.
+            Check for updated definitions when browsers change their command-line flags.
+          </div>
+          <div id="defs-status" class="text-xs text-text-muted">Loading status…</div>
+        </div>
+      </section>
+
+      <section class="space-y-2">
+        <h2 class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Check for Updates</h2>
+        <div class="bg-surface rounded-lg p-4 space-y-3">
+          <div class="flex items-center gap-3">
+            <button id="btn-check-defs-update"
+              class="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-accent hover:bg-accent-glow text-white rounded transition-colors">
+              <span style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.85rem;">&#xE895;</span>
+              <span>Check for updates</span>
+            </button>
+            <span id="defs-check-spinner" class="hidden text-xs text-text-muted">Checking…</span>
+          </div>
+          <div id="defs-update-result" class="hidden text-xs rounded-lg p-3 border border-border space-y-2"></div>
+        </div>
+      </section>
+
+      <section class="space-y-2">
+        <h2 class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Actions</h2>
+        <div class="bg-surface rounded-lg p-4 space-y-3">
+          <div class="flex flex-wrap gap-2">
+            <button id="btn-revert-defs"
+              class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary bg-surface-raised hover:bg-border-bright border border-border rounded transition-colors">
+              <span style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.85rem;">&#xE7A7;</span>
+              <span>Revert to previous</span>
+            </button>
+            <button id="btn-reset-defs"
+              class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary bg-surface-raised hover:bg-border-bright border border-border rounded transition-colors">
+              <span style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.85rem;">&#xE777;</span>
+              <span>Reset to built-in</span>
+            </button>
+          </div>
+          <div class="text-[0.65rem] text-text-muted leading-relaxed">
+            <strong>Revert</strong> restores the previously active definitions.
+            <strong>Reset</strong> discards all updates and uses the version bundled with this app.
+          </div>
+        </div>
+      </section>
+
+    </div>
+  `;
+}
+
+// Load and display defs status (called after render)
+async function loadDefsStatus() {
+  const el = document.getElementById('defs-status');
+  if (!el) return;
+  try {
+    const status = await App.GetDefsStatus();
+    const source = status.source || 'unknown';
+    const version = status.version || '—';
+    const updated = status.updatedAt ? new Date(status.updatedAt).toLocaleString() : '—';
+    const hasPrevious = status.hasPrevious || false;
+
+    el.innerHTML = `
+      <div class="space-y-1">
+        <div class="flex items-center gap-2">
+          <span class="font-medium text-text-primary">Version:</span>
+          <span>${esc(version)}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="font-medium text-text-primary">Source:</span>
+          <span class="capitalize">${esc(source)}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="font-medium text-text-primary">Last updated:</span>
+          <span>${esc(updated)}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="font-medium text-text-primary">Previous version available:</span>
+          <span>${hasPrevious ? '<span class="text-green-400">Yes</span>' : 'No'}</span>
+        </div>
+      </div>
+    `;
+
+    // Enable/disable revert button based on whether previous exists
+    const btnRevert = document.getElementById('btn-revert-defs');
+    if (btnRevert) {
+      if (!hasPrevious) {
+        btnRevert.classList.add('opacity-50', 'cursor-not-allowed');
+        btnRevert.disabled = true;
+      } else {
+        btnRevert.classList.remove('opacity-50', 'cursor-not-allowed');
+        btnRevert.disabled = false;
+      }
+    }
+  } catch (e) {
+    el.textContent = 'Could not load status: ' + e;
+  }
 }
 
 // ─── Icons Tab ────────────────────────────────────────────────────────────────
@@ -1446,21 +1607,37 @@ function attachListeners() {
 
   const selDefaultBrowser = document.getElementById('sel-default-browser');
   if (selDefaultBrowser) selDefaultBrowser.addEventListener('change', () => {
-    const profileRow = document.getElementById('default-profile-row');
     const selProfile = document.getElementById('sel-default-profile');
     if (selDefaultBrowser.value) {
-      profileRow.classList.remove('invisible');
       selProfile.innerHTML = renderProfileOptions(selDefaultBrowser.value, '');
-    } else {
-      profileRow.classList.add('invisible');
     }
   });
 
   // Auto-save general settings on any change
   async function saveGeneralSettings() {
-    const browser = document.getElementById('sel-default-browser')?.value || '';
-    const profile = document.getElementById('sel-default-profile')?.value || '';
+    const browserSel = document.getElementById('sel-default-browser');
+    let browser = browserSel?.value || '';
+    let profile = document.getElementById('sel-default-profile')?.value || '';
     const fallback = document.querySelector('input[name="fallback"]:checked')?.value || 'picker';
+
+    // Guard: "Use primary browser" requires a browser to be selected.
+    // If none is selected, auto-pick the first available browser to prevent loops.
+    if (fallback === 'default' && !browser && state.activeBrowsers.length > 0) {
+      const first = state.activeBrowsers[0];
+      browser = first.name;
+      profile = first.profiles && first.profiles.length > 0 ? first.profiles[0].id : '';
+      // Update the dropdown to reflect the auto-selection
+      if (browserSel) browserSel.value = browser;
+      const profileRow = document.getElementById('default-profile-row');
+      const selProfile = document.getElementById('sel-default-profile');
+      if (profileRow) profileRow.classList.remove('invisible');
+      if (selProfile) {
+        selProfile.innerHTML = renderProfileOptions(browser, profile);
+        selProfile.value = profile;
+      }
+      showToast('Primary browser auto-selected — a browser is required when using "Use primary browser" fallback.', 'info');
+    }
+
     try {
       await App.SaveSettings(browser, profile, fallback);
       state.config.defaultBrowser = browser;
@@ -1631,6 +1808,128 @@ function attachListeners() {
 
   // Drag-to-reorder rules
   attachDragListeners();
+
+  // ── Apps tab ──
+  const btnRefreshApps = document.getElementById('btn-refresh-apps');
+  if (btnRefreshApps) btnRefreshApps.addEventListener('click', async () => {
+    try {
+      state.appRedirects = await App.GetAppRedirects();
+      render();
+      showToast('App list refreshed', 'info');
+    } catch (e) { showToast('Refresh failed', 'error'); }
+  });
+
+  document.querySelectorAll('.app-redirect-toggle').forEach(toggle => {
+    toggle.addEventListener('change', async (e) => {
+      e.stopPropagation();
+      const appId = toggle.dataset.appId;
+      const enabled = toggle.checked;
+      try {
+        await App.SetAppRedirectEnabled(appId, enabled);
+        // Update local state
+        const app = state.appRedirects.find(a => a.id === appId);
+        if (app) app.enabled = enabled;
+        showToast(`${app?.name || 'App'} redirect ${enabled ? 'enabled' : 'disabled'}`, 'success');
+      } catch (err) {
+        toggle.checked = !enabled;
+        showToast('Failed to update app redirect', 'error');
+      }
+    });
+  });
+
+  // ── Maintenance tab ──
+  const btnCheckDefsUpdate = document.getElementById('btn-check-defs-update');
+  if (btnCheckDefsUpdate) {
+    // Load status on tab open
+    loadDefsStatus();
+
+    btnCheckDefsUpdate.addEventListener('click', async () => {
+      const spinner = document.getElementById('defs-check-spinner');
+      const resultEl = document.getElementById('defs-update-result');
+      spinner?.classList.remove('hidden');
+      resultEl?.classList.add('hidden');
+      btnCheckDefsUpdate.disabled = true;
+
+      try {
+        const result = await App.CheckForDefsUpdate();
+        spinner?.classList.add('hidden');
+        btnCheckDefsUpdate.disabled = false;
+
+        if (result.error) {
+          resultEl.innerHTML = `
+            <div class="text-red-400">✕ ${esc(result.error)}</div>
+          `;
+          resultEl.classList.remove('hidden');
+        } else if (result.upToDate) {
+          resultEl.innerHTML = `
+            <div class="text-green-400">✓ Definitions are up to date (v${esc(result.currentVersion)})</div>
+          `;
+          resultEl.classList.remove('hidden');
+        } else {
+          // Update available
+          resultEl.innerHTML = `
+            <div class="text-accent-light font-medium">Update available: v${esc(result.newVersion)}</div>
+            ${result.notes ? `<div class="text-text-secondary">${esc(result.notes)}</div>` : ''}
+            <div class="flex gap-2 mt-2">
+              <button id="btn-apply-defs-update"
+                class="px-3 py-1.5 text-xs font-medium bg-accent hover:bg-accent-glow text-white rounded transition-colors">
+                Apply update
+              </button>
+              <button id="btn-keep-current-defs"
+                class="px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary bg-surface-raised hover:bg-border-bright border border-border rounded transition-colors">
+                Keep current
+              </button>
+            </div>
+          `;
+          resultEl.classList.remove('hidden');
+
+          // Wire apply/keep buttons
+          document.getElementById('btn-apply-defs-update')?.addEventListener('click', async () => {
+            try {
+              await App.ApplyDefsUpdate();
+              showToast('Definitions updated successfully', 'success');
+              loadDefsStatus();
+              resultEl.classList.add('hidden');
+            } catch (e) {
+              showToast('Failed to apply update: ' + e, 'error');
+            }
+          });
+          document.getElementById('btn-keep-current-defs')?.addEventListener('click', () => {
+            resultEl.classList.add('hidden');
+          });
+        }
+      } catch (e) {
+        spinner?.classList.add('hidden');
+        btnCheckDefsUpdate.disabled = false;
+        resultEl.innerHTML = `<div class="text-red-400">✕ Check failed: ${esc(String(e))}</div>`;
+        resultEl.classList.remove('hidden');
+      }
+    });
+  }
+
+  const btnRevertDefs = document.getElementById('btn-revert-defs');
+  if (btnRevertDefs) btnRevertDefs.addEventListener('click', async () => {
+    if (!confirm('Revert to the previous browser definitions?')) return;
+    try {
+      await App.RevertDefsUpdate();
+      showToast('Reverted to previous definitions', 'success');
+      loadDefsStatus();
+    } catch (e) {
+      showToast('Revert failed: ' + e, 'error');
+    }
+  });
+
+  const btnResetDefs = document.getElementById('btn-reset-defs');
+  if (btnResetDefs) btnResetDefs.addEventListener('click', async () => {
+    if (!confirm('Reset to the built-in definitions bundled with this app? All updates will be discarded.')) return;
+    try {
+      await App.ResetDefsToBuiltin();
+      showToast('Reset to built-in definitions', 'success');
+      loadDefsStatus();
+    } catch (e) {
+      showToast('Reset failed: ' + e, 'error');
+    }
+  });
 
   // ── Rule Editor ──
   attachRuleEditorListeners();

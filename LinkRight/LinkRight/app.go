@@ -5,9 +5,50 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
+
+// ─── Loop Protection ──────────────────────────────────────────────────────────
+// Tracks recently processed URLs to detect infinite loops where LinkRight keeps
+// being invoked for the same URL (e.g. when it's the default browser and no
+// primary browser is configured).
+
+var (
+	recentURLsMu sync.Mutex
+	recentURLs   = map[string][]time.Time{} // URL → list of recent timestamps
+)
+
+const (
+	loopWindow    = 5 * time.Second // time window to detect loops
+	loopThreshold = 5               // number of times same URL in window = loop
+)
+
+// isLoopDetected returns true if the given URL has been processed too many
+// times within the loop detection window, indicating an infinite loop.
+func isLoopDetected(url string) bool {
+	recentURLsMu.Lock()
+	defer recentURLsMu.Unlock()
+
+	now := time.Now()
+	// Clean old entries
+	cutoff := now.Add(-loopWindow)
+	timestamps := recentURLs[url]
+	var recent []time.Time
+	for _, t := range timestamps {
+		if t.After(cutoff) {
+			recent = append(recent, t)
+		}
+	}
+
+	// Record this access
+	recent = append(recent, now)
+	recentURLs[url] = recent
+
+	return len(recent) >= loopThreshold
+}
 
 // App struct holds application state
 type App struct {
@@ -27,6 +68,7 @@ func NewApp(devMode bool) *App {
 // startup is called when the app starts
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	LoadActiveDefs() // Load browser definitions (cached or embedded baseline)
 	a.config = LoadConfig()
 	a.browsers = applyArchivedState(DetectBrowsers(), a.config.ArchivedBrowserPaths)
 
@@ -186,8 +228,24 @@ func (a *App) GetConfig() Config {
 	return a.config
 }
 
-// SaveSettings saves the general settings (default browser, fallback behavior)
+// SaveSettings saves the general settings (default browser, fallback behavior).
+// If fallback is "default" (use primary browser) but no primary browser is
+// selected, auto-select the first active browser to prevent a routing loop.
 func (a *App) SaveSettings(defaultBrowser, defaultProfile, fallbackBehavior string) error {
+	// Guard: if fallback is "use primary browser" we must have a primary browser
+	if fallbackBehavior == "default" && defaultBrowser == "" {
+		// Auto-select the first active (non-archived) browser
+		for _, b := range a.browsers {
+			if !b.Archived {
+				defaultBrowser = b.Name
+				if len(b.Profiles) > 0 {
+					defaultProfile = b.Profiles[0].ID
+				}
+				break
+			}
+		}
+	}
+
 	a.config.DefaultBrowser = defaultBrowser
 	a.config.DefaultProfile = defaultProfile
 	a.config.FallbackBehavior = fallbackBehavior
@@ -275,6 +333,24 @@ func (a *App) IsPickerMode() bool {
 // "launched"  — a rule matched and the handler/browser was opened successfully
 // "picker"    — no rule matched, or launch failed; show the picker popup
 func (a *App) ProcessURL(rawURL string) string {
+	// ─── Loop Protection ───────────────────────────────────────────────────
+	// If LinkRight has already handled this exact URL recently, we're in a
+	// loop (e.g. no primary browser set + fallback = "default" + LinkRight is
+	// the Windows default browser). Break the loop by showing the picker.
+	if isLoopDetected(rawURL) {
+		return "picker"
+	}
+
+	// ─── App Redirects ────────────────────────────────────────────────────
+	// Check if the URL matches an enabled app redirect (e.g. Figma, Teams).
+	// These take priority over browser rules so links open in desktop apps.
+	if app, protocolURL := FindAppRedirectForURL(rawURL, a.config.EnabledAppRedirects); app != nil {
+		if err := LaunchProtocolURL(protocolURL); err == nil {
+			return "launched"
+		}
+		// If the protocol launch failed, fall through to normal rule processing
+	}
+
 	rule := FindMatchingRule(rawURL, a.config.Rules)
 
 	// Protocol URL with a matching rule → launch the registered desktop app
@@ -298,17 +374,24 @@ func (a *App) ProcessURL(rawURL string) string {
 	}
 
 	// No rule matched — check fallback behavior
-	if a.config.FallbackBehavior == "default" && a.config.DefaultBrowser != "" {
-		// Find the default browser path
-		for _, b := range a.browsers {
-			if b.Name == a.config.DefaultBrowser {
-				profile := a.config.DefaultProfile
-				if err := LaunchBrowser(b.Path, profile, rawURL); err == nil {
-					return "launched"
+	if a.config.FallbackBehavior == "default" {
+		// If a primary browser is configured, try to launch it
+		if a.config.DefaultBrowser != "" {
+			for _, b := range a.browsers {
+				if b.Name == a.config.DefaultBrowser {
+					profile := a.config.DefaultProfile
+					if err := LaunchBrowser(b.Path, profile, rawURL); err == nil {
+						return "launched"
+					}
+					break
 				}
-				break
 			}
 		}
+
+		// Primary browser is not set or not found — this is the dangerous
+		// configuration that causes loops. Fall through to picker to break
+		// the loop rather than handing back to the OS.
+		return "picker"
 	}
 
 	// If the user chose "picker" as fallback, show the picker immediately.
@@ -325,12 +408,9 @@ func (a *App) ProcessURL(rawURL string) string {
 		}
 	}
 
-	// Last resort: hand the URL to the OS (ShellExecute / cmd /c start).
-	// This prevents a dead-end when no picker browsers are available.
-	if err := launchWithOS(rawURL); err == nil {
-		return "launched"
-	}
-
+	// Last resort: show the picker. We intentionally do NOT call launchWithOS
+	// here because if LinkRight is the default browser, that would re-invoke
+	// LinkRight and create an infinite loop.
 	return "picker"
 }
 

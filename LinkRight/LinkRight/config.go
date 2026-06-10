@@ -56,7 +56,7 @@ func defaultConfig() Config {
 	return Config{
 		DefaultBrowser:   "",
 		DefaultProfile:   "Default",
-		FallbackBehavior: "default",
+		FallbackBehavior: "picker",
 		Rules:            []Rule{},
 		PickerSettings: PickerSettings{
 			ShowBrowserNames: true,
@@ -130,7 +130,10 @@ func ReorderRules(cfg *Config, orderedIDs []string) error {
 	return SaveConfig(*cfg)
 }
 
-// ValidateRules checks all rules against currently installed browsers/profiles
+// ValidateRules checks all rules against currently installed browsers/profiles.
+// When a profile is missing, the rule will still work (the browser launches
+// without a profile flag as a graceful fallback), but a warning is surfaced
+// so the user can update the rule.
 func ValidateRules(rules []Rule, browsers []Browser) []RuleValidation {
 	var validations []RuleValidation
 
@@ -161,7 +164,7 @@ func ValidateRules(rules []Rule, browsers []Browser) []RuleValidation {
 			}
 			if !profileFound {
 				v.ProfileMissing = true
-				v.Message = "Profile '" + rule.ProfileName + "' not found in " + rule.Browser
+				v.Message = "Profile '" + rule.ProfileName + "' not found in " + rule.Browser + " (will use default profile)"
 				validations = append(validations, v)
 			}
 		}

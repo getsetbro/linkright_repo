@@ -13,6 +13,7 @@ echo   Done.
 :: Step 2: Rebuild
 echo [2/3] Building LinkRight.exe...
 cd /d "%~dp0..\LinkRight"
+set GOWORK=off
 wails build >"%~dp0..\build_output.txt" 2>&1
 if %errorlevel% neq 0 (
     echo   BUILD FAILED. See build_output.txt for details.
