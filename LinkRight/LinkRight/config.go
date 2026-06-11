@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -93,7 +94,7 @@ func UpdateRule(cfg *Config, updated Rule) error {
 			return SaveConfig(*cfg)
 		}
 	}
-	return nil
+	return fmt.Errorf("rule not found: %s", updated.ID)
 }
 
 // DeleteRule removes a rule by ID and re-numbers priorities

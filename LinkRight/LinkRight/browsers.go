@@ -32,12 +32,19 @@ func DetectBrowsers() []Browser {
 		if nameLower == "link right" || nameLower == "linkright" {
 			continue
 		}
+		// Mark browsers in the unsupported list as unsupported (but still include them)
+		if IsUnsupportedBrowser(b.Name, b.Path) {
+			b.Unsupported = true
+			b.UnsupportedReason = "This browser is not supported by Link Right and cannot be used for routing."
+		}
 		if !seen[key] && b.Path != "" && key != exeSelf {
 			seen[key] = true
-			// Detect profiles
-			b.Profiles = detectProfiles(b)
-			if len(b.Profiles) == 0 {
-				b.Profiles = []BrowserProfile{{ID: "Default", Name: "Default"}}
+			// Detect profiles (skip for unsupported browsers)
+			if !b.Unsupported {
+				b.Profiles = detectProfiles(b)
+				if len(b.Profiles) == 0 {
+					b.Profiles = []BrowserProfile{{ID: "Default", Name: "Default"}}
+				}
 			}
 			unique = append(unique, b)
 		}
@@ -119,25 +126,50 @@ func extractExePath(cmd string) string {
 		if end >= 0 {
 			return cmd[1 : end+1]
 		}
+		// No closing quote — strip the leading quote and try the whole string
+		// trimmed of any trailing arguments after common separators.
+		return ""
 	}
 	// No quotes — take up to first space
 	parts := strings.SplitN(cmd, " ", 2)
-	return parts[0]
+	candidate := parts[0]
+
+	// If the simple split yields a valid file, use it directly.
+	if _, err := os.Stat(candidate); err == nil {
+		return candidate
+	}
+
+	// Otherwise, the path likely contains spaces (e.g. C:\Program Files\...\app.exe %1).
+	// Progressively extend the path by consuming space-separated tokens until we
+	// find a valid .exe file or run out of tokens.
+	if len(parts) == 2 {
+		tokens := strings.Split(parts[1], " ")
+		accumulated := candidate
+		for _, tok := range tokens {
+			accumulated += " " + tok
+			if strings.HasSuffix(strings.ToLower(accumulated), ".exe") {
+				if _, err := os.Stat(accumulated); err == nil {
+					return accumulated
+				}
+			}
+		}
+	}
+
+	// Return the first token as a fallback (may still work if it's on PATH)
+	return candidate
 }
 
 func detectBrowserType(name, path string) string {
 	return DefsDetectBrowserType(name, path)
 }
 
-// detectProfiles finds browser profiles for a given browser
+// detectProfiles finds browser profiles for a given browser.
+// Only Chromium-based browsers support profiles; all others return nil.
 func detectProfiles(b Browser) []BrowserProfile {
-	switch b.Type {
-	case "chromium":
-		return detectChromiumProfiles(b.Path)
-	case "firefox":
-		return detectFirefoxProfiles(b.Path)
+	if b.Type != "chromium" {
+		return nil
 	}
-	return nil
+	return detectChromiumProfiles(b.Path)
 }
 
 // detectChromiumProfiles finds profiles for Chromium-based browsers
@@ -280,383 +312,6 @@ func chromiumUserDataDir(exePath string) string {
 		}
 	}
 	return ""
-}
-
-// firefoxProfileDir determines the correct Firefox profile directory based on
-// the browser executable path. Firefox and Firefox Developer Edition use
-// separate profile directories:
-//   - Firefox:               %APPDATA%\Mozilla\Firefox
-//   - Firefox Developer Ed.: %APPDATA%\Mozilla\Firefox Developer Edition (if it exists)
-//
-// If we cannot determine which edition the exe belongs to (e.g. both resolve to
-// the same profiles.ini), we return "" to signal that profile selection should
-// be disabled for this browser.
-func firefoxProfileDir(exePath string) string {
-	appData := os.Getenv("APPDATA")
-	if appData == "" {
-		return ""
-	}
-
-	pathLower := strings.ToLower(exePath)
-
-	// Firefox Developer Edition typically installs to a path containing
-	// "firefox developer edition" or "firefox dev edition" or its exe is
-	// named differently. The most reliable indicator is the install path.
-	isDevEdition := strings.Contains(pathLower, "developer edition") ||
-		strings.Contains(pathLower, "firefox dev")
-
-	if isDevEdition {
-		devDir := filepath.Join(appData, "Mozilla", "Firefox Developer Edition")
-		// Only use the dev edition directory if it actually exists with its own profiles.ini
-		iniPath := filepath.Join(devDir, "profiles.ini")
-		if _, err := os.Stat(iniPath); err == nil {
-			return devDir
-		}
-		// Dev edition installed but no separate profile dir — cannot distinguish profiles
-		return ""
-	}
-
-	// Standard Firefox
-	stdDir := filepath.Join(appData, "Mozilla", "Firefox")
-	iniPath := filepath.Join(stdDir, "profiles.ini")
-	if _, err := os.Stat(iniPath); err == nil {
-		return stdDir
-	}
-
-	return ""
-}
-
-// detectFirefoxProfiles discovers Firefox profiles by scanning the Profiles directory
-// on disk and enriching display names from profiles.ini and Profile Groups SQLite
-// databases. Returns nil if profiles cannot be reliably determined for this specific
-// Firefox variant (disabling profile selection).
-func detectFirefoxProfiles(exePath string) []BrowserProfile {
-	profileDir := firefoxProfileDir(exePath)
-	if profileDir == "" {
-		// Cannot determine the correct profile directory for this Firefox variant.
-		// Return nil so the browser gets a single "Default" profile (no profile selection).
-		return nil
-	}
-
-	profilesDir := filepath.Join(profileDir, "Profiles")
-	iniPath := filepath.Join(profileDir, "profiles.ini")
-	profileGroupsDir := filepath.Join(profileDir, "Profile Groups")
-
-	// Step 1: Scan the Profiles directory for all profile folders on disk.
-	// This is the authoritative source for which profiles actually exist.
-	entries, err := os.ReadDir(profilesDir)
-	if err != nil {
-		return nil
-	}
-
-	// Collect all profile directory names
-	type profileInfo struct {
-		dirName string
-		name    string
-	}
-	var allProfiles []profileInfo
-	for _, entry := range entries {
-		if entry.IsDir() {
-			dirName := entry.Name()
-			// Firefox profile dirs are like "xxxxxxxx.ProfileName" or "xxxxxxxx.default-release"
-			displayName := dirName
-			if idx := strings.LastIndex(dirName, "."); idx >= 0 {
-				displayName = dirName[idx+1:]
-			}
-			allProfiles = append(allProfiles, profileInfo{dirName: dirName, name: displayName})
-		}
-	}
-
-	if len(allProfiles) == 0 {
-		return nil
-	}
-
-	// Step 2: Read profiles.ini to get Name= values for profiles listed there.
-	// The Name= field in profiles.ini is the profile's display name for profiles
-	// managed by the legacy system.
-	iniNames := parseFirefoxProfilesINI(iniPath)
-
-	// Step 3: Read Profile Groups SQLite databases for the real user-visible names.
-	// Firefox 67+ stores renamed profile names in these databases.
-	sqliteNames := readFirefoxProfileGroupNames(profileGroupsDir)
-
-	// Step 4: Build final profile list, preferring SQLite names > INI names > dir suffix
-	var profiles []BrowserProfile
-	for _, p := range allProfiles {
-		name := p.name
-		if sqliteName, ok := sqliteNames[p.dirName]; ok && sqliteName != "" {
-			name = sqliteName
-		} else if iniName, ok := iniNames[p.dirName]; ok && iniName != "" {
-			name = iniName
-		}
-		profiles = append(profiles, BrowserProfile{
-			ID:   p.dirName,
-			Name: name,
-		})
-	}
-
-	return profiles
-}
-
-// parseFirefoxProfilesINI reads profiles.ini and returns a map of
-// profile directory name -> Name= value.
-func parseFirefoxProfilesINI(iniPath string) map[string]string {
-	result := make(map[string]string)
-
-	data, err := os.ReadFile(iniPath)
-	if err != nil {
-		return result
-	}
-
-	lines := strings.Split(string(data), "\n")
-	var currentName, currentPath string
-	inProfile := false
-
-	flush := func() {
-		if currentPath != "" {
-			result[currentPath] = currentName
-		}
-	}
-
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "[Profile") {
-			if inProfile {
-				flush()
-			}
-			currentName = ""
-			currentPath = ""
-			inProfile = true
-		} else if strings.HasPrefix(line, "[") {
-			// Any other section header ends the current profile block
-			if inProfile {
-				flush()
-			}
-			inProfile = false
-		} else if inProfile {
-			if strings.HasPrefix(line, "Name=") {
-				currentName = strings.TrimPrefix(line, "Name=")
-			} else if strings.HasPrefix(line, "Path=") {
-				p := strings.TrimPrefix(line, "Path=")
-				// Normalize path separators and get just the last segment as the dir name
-				p = strings.ReplaceAll(p, "\\", "/")
-				parts := strings.Split(p, "/")
-				currentPath = parts[len(parts)-1]
-			}
-		}
-	}
-	if inProfile {
-		flush()
-	}
-
-	return result
-}
-
-// readFirefoxProfileGroupNames reads all Profile Groups SQLite databases and
-// returns a map of profile directory name -> user-visible display name.
-// Firefox 67+ stores profile metadata (including user-renamed names) in these
-// SQLite databases under the "Profile Groups" directory.
-// Parses the SQLite page/cell format to extract text fields from the Profiles table.
-func readFirefoxProfileGroupNames(profileGroupsDir string) map[string]string {
-	result := make(map[string]string)
-
-	entries, err := os.ReadDir(profileGroupsDir)
-	if err != nil {
-		return result
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".sqlite") {
-			continue
-		}
-		// Skip WAL/SHM files
-		if strings.HasSuffix(entry.Name(), "-wal") || strings.HasSuffix(entry.Name(), "-shm") {
-			continue
-		}
-
-		dbPath := filepath.Join(profileGroupsDir, entry.Name())
-		names := extractProfileNamesFromSQLite(dbPath)
-		for dirName, displayName := range names {
-			result[dirName] = displayName
-		}
-	}
-
-	return result
-}
-
-// extractProfileNamesFromSQLite extracts profile path/name pairs from a Firefox
-// Profile Groups SQLite database. The Profiles table has columns:
-// (id INTEGER, path TEXT, name TEXT, avatar TEXT, themeId TEXT, themeFg TEXT, themeBg TEXT)
-// We look for the "Profiles\" or "Profiles/" prefix pattern and use SQLite's varint
-// record format to properly extract the adjacent name field.
-func extractProfileNamesFromSQLite(dbPath string) map[string]string {
-	result := make(map[string]string)
-
-	data, err := os.ReadFile(dbPath)
-	if err != nil {
-		return result
-	}
-
-	// Strategy: Find all occurrences of "Profiles\" or "Profiles/" in the binary data.
-	// In SQLite's B-tree leaf pages, record fields are stored contiguously with a
-	// header that specifies field lengths. The path field is immediately followed by
-	// the name field. We use the record header to determine field boundaries.
-	//
-	// Simpler approach: since we know the table schema, we look for the path pattern
-	// and then use the SQLite record header (which precedes the payload) to find
-	// field lengths. However, parsing the full SQLite format is complex.
-	//
-	// Pragmatic approach: scan for "Profiles\" or "Profiles/" followed by a valid
-	// profile directory name pattern (8chars.name). The name field follows immediately
-	// after the path field (no separator) in the record payload. We can determine
-	// where the path ends by knowing the expected format: "Profiles\XXXXXXXX.Name"
-	// where XXXXXXXX is exactly 8 alphanumeric chars followed by a dot and the
-	// directory suffix. The name field starts right after.
-	//
-	// But we need to know the path field length. We'll use the record header.
-	// Instead, let's use a different approach: find path strings and cross-reference
-	// with the actual profile directories on disk to determine exact path length,
-	// then read the name that follows.
-
-	profilesDir := filepath.Dir(dbPath)
-	profilesDir = filepath.Join(filepath.Dir(profilesDir), "Profiles")
-	knownDirs := make(map[string]bool)
-	if dirEntries, err := os.ReadDir(profilesDir); err == nil {
-		for _, de := range dirEntries {
-			if de.IsDir() {
-				knownDirs[de.Name()] = true
-			}
-		}
-	}
-
-	content := data
-	profilesBackslash := []byte("Profiles\\")
-	profilesSlash := []byte("Profiles/")
-
-	for i := 0; i < len(content); {
-		// Find next "Profiles\" or "Profiles/" marker
-		idx := -1
-		marker := profilesBackslash
-		idx = indexBytes(content[i:], profilesBackslash)
-		if idx == -1 {
-			idx = indexBytes(content[i:], profilesSlash)
-			marker = profilesSlash
-		}
-		if idx == -1 {
-			break
-		}
-		_ = marker
-		pos := i + idx
-		afterPrefix := pos + 9 // len("Profiles\") or len("Profiles/")
-
-		// Try to match a known profile directory name starting at afterPrefix
-		matched := false
-		for dirName := range knownDirs {
-			dirBytes := []byte(dirName)
-			end := afterPrefix + len(dirBytes)
-			if end > len(content) {
-				continue
-			}
-			if string(content[afterPrefix:end]) == dirName {
-				// Found a known profile path. The name field follows immediately after.
-				// Read the display name: it's the next sequence of printable chars
-				// that doesn't include the path we just read.
-				nameStart := end
-				// In SQLite records, fields are stored back-to-back. The name follows path.
-				// Read until we hit a non-printable char or another known pattern.
-				nameEnd := nameStart
-				for nameEnd < len(content) {
-					b := content[nameEnd]
-					if b < 0x20 || b >= 0x7F {
-						break
-					}
-					nameEnd++
-				}
-				if nameEnd > nameStart {
-					displayName := string(content[nameStart:nameEnd])
-					// Validate: should be a reasonable name, not contain path separators
-					// or look like concatenated fields (avatar, theme, etc.)
-					// The name field ends before the avatar field which is typically
-					// a short word like "shopping", "heart", "book", "briefcase"
-					displayName = extractCleanName(displayName)
-					if displayName != "" {
-						// Keep the shortest valid name found for each dir
-						// (shorter = more likely to be just the name without extra fields)
-						if existing, ok := result[dirName]; !ok || len(displayName) < len(existing) {
-							result[dirName] = displayName
-						}
-					}
-				}
-				matched = true
-				i = end
-				break
-			}
-		}
-		if !matched {
-			i = pos + 1
-		}
-	}
-
-	return result
-}
-
-// extractCleanName extracts just the profile display name from a potentially
-// concatenated string of SQLite record fields. Firefox Profile Groups records
-// store fields as: path, name, avatar, themeId, themeFg, themeBg.
-// The avatar field is one of a known set of values.
-func extractCleanName(raw string) string {
-	// Known avatar values that might be concatenated after the name
-	avatars := []string{"shopping", "heart", "book", "briefcase", "flower",
-		"tree", "football", "dog", "cat", "globe", "star", "music"}
-
-	for _, avatar := range avatars {
-		if idx := strings.Index(raw, avatar); idx > 0 {
-			return raw[:idx]
-		}
-	}
-
-	// Check for theme patterns (e.g., "firefox-compact-dark@", "default-theme@", "{uuid}")
-	if idx := strings.Index(raw, "firefox-compact-"); idx > 0 {
-		return raw[:idx]
-	}
-	if idx := strings.Index(raw, "default-theme@"); idx > 0 {
-		return raw[:idx]
-	}
-	// UUID pattern in curly braces
-	if idx := strings.Index(raw, "{"); idx > 0 {
-		return raw[:idx]
-	}
-	// RGB color pattern
-	if idx := strings.Index(raw, "rgb"); idx > 0 {
-		return raw[:idx]
-	}
-	if idx := strings.Index(raw, "rgba"); idx > 0 {
-		return raw[:idx]
-	}
-
-	// If the string is short enough and looks clean, use it as-is
-	if len(raw) <= 50 && !strings.ContainsAny(raw, "\\/@#") {
-		return raw
-	}
-
-	return ""
-}
-
-// indexBytes finds the first occurrence of needle in haystack
-func indexBytes(haystack, needle []byte) int {
-	for i := 0; i <= len(haystack)-len(needle); i++ {
-		found := true
-		for j := 0; j < len(needle); j++ {
-			if haystack[i+j] != needle[j] {
-				found = false
-				break
-			}
-		}
-		if found {
-			return i
-		}
-	}
-	return -1
 }
 
 // scanMSIXBrowsers detects MSIX/AppX-packaged browsers by looking for their

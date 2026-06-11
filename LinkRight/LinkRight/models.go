@@ -31,12 +31,14 @@ type BrowserProfile struct {
 
 // Browser represents an installed browser
 type Browser struct {
-	Name     string           `json:"name"`
-	Path     string           `json:"path"`
-	IconPath string           `json:"iconPath"`
-	Profiles []BrowserProfile `json:"profiles"`
-	Type     string           `json:"type"`     // "chromium", "firefox", "other"
-	Archived bool             `json:"archived"` // true = hidden from picker and rules
+	Name              string           `json:"name"`
+	Path              string           `json:"path"`
+	IconPath          string           `json:"iconPath"`
+	Profiles          []BrowserProfile `json:"profiles"`
+	Type              string           `json:"type"`              // "chromium", "firefox", "other"
+	Archived          bool             `json:"archived"`          // true = hidden from picker and rules
+	Unsupported       bool             `json:"unsupported"`       // true = in the unsupported list, shown as disabled
+	UnsupportedReason string           `json:"unsupportedReason"` // explanation shown in UI
 }
 
 // PickerSettings controls the appearance and behavior of the picker popup
@@ -49,13 +51,13 @@ type PickerSettings struct {
 type Config struct {
 	DefaultBrowser       string         `json:"defaultBrowser"`
 	DefaultProfile       string         `json:"defaultProfile"`
-	FallbackBehavior     string         `json:"fallbackBehavior"`    // "picker" or "default"
+	FallbackBehavior     string         `json:"fallbackBehavior"`     // "picker" or "default"
 	Rules                []Rule         `json:"rules"`
 	FirstRun             bool           `json:"firstRun"`
 	PickerSettings       PickerSettings `json:"pickerSettings"`
-	CustomBrowsers       []Browser      `json:"customBrowsers"`      // user-added custom browsers (legacy, kept for compat)
+	CustomBrowsers       []Browser      `json:"customBrowsers"`       // user-added custom browsers (legacy, kept for compat)
 	ArchivedBrowserPaths []string       `json:"archivedBrowserPaths"` // paths of browsers hidden from picker/rules
-	EnabledAppRedirects  []string       `json:"enabledAppRedirects"` // IDs of enabled app redirects e.g. ["figma","teams"]
+	EnabledAppRedirects  []string       `json:"enabledAppRedirects"`  // IDs of enabled app redirects e.g. ["figma","teams"]
 }
 
 // PickerRequest is sent to the frontend when the picker popup is needed

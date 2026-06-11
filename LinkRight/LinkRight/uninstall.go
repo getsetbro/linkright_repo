@@ -160,7 +160,23 @@ func uninstallShortcuts() {
 	}
 }
 
-// deleteRegKeyTree deletes a registry key, ignoring errors (key may not exist).
+// deleteRegKeyTree recursively deletes a registry key and all its subkeys.
+// Errors are ignored (key may not exist).
 func deleteRegKeyTree(root registry.Key, keyPath string) {
+	// Open the key to enumerate subkeys
+	k, err := registry.OpenKey(root, keyPath, registry.READ|registry.ENUMERATE_SUB_KEYS)
+	if err != nil {
+		// Key doesn't exist or can't be opened — nothing to do
+		return
+	}
+	subkeys, _ := k.ReadSubKeyNames(-1)
+	k.Close()
+
+	// Recursively delete all subkeys first (depth-first)
+	for _, sub := range subkeys {
+		deleteRegKeyTree(root, keyPath+`\`+sub)
+	}
+
+	// Now delete the (now-empty) key itself
 	_ = registry.DeleteKey(root, keyPath)
 }

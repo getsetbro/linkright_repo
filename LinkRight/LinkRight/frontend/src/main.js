@@ -110,7 +110,7 @@ window.addEventListener('load', async () => {
           App.GetAppStatus(),
         ]);
         state.browsers = browsers || [];
-        state.activeBrowsers = (browsers || []).filter(b => !b.archived);
+        state.activeBrowsers = (browsers || []).filter(b => !b.archived && !b.unsupported);
         state.rules = rules || [];
         state.config = config || {};
         state.appStatus = appStatus || {};
@@ -258,8 +258,8 @@ function renderPickerMode() {
         </div>
       </div>
 
-      <!-- Profile selector (shown when selected browser has multiple profiles) -->
-      ${selectedBrowser && selectedBrowser.profiles && selectedBrowser.profiles.length > 1 ? `
+      <!-- Profile selector (shown when selected browser is Chromium-based and has multiple profiles) -->
+      ${selectedBrowser && selectedBrowser.type === 'chromium' && selectedBrowser.profiles && selectedBrowser.profiles.length > 1 ? `
       <div class="px-4 pb-2 flex items-center gap-2">
         <label for="picker-profile" class="text-xs font-medium text-text-secondary whitespace-nowrap">Profile</label>
         <select id="picker-profile" class="flex-1 bg-surface-raised border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent">
@@ -276,6 +276,9 @@ function renderPickerMode() {
           <input type="checkbox" id="picker-always-use" class="accent-accent w-4 h-4" ${state.alwaysUse ? 'checked' : ''}>
           <span class="text-xs text-text-secondary">Make this a rule</span>
         </label>
+        <div class="text-[0.65rem] text-text-muted leading-relaxed">
+          💡 Tip: To skip this picker and always use your primary browser, <a id="picker-tip-settings" href="#" class="text-accent-light hover:underline">open Settings → General</a> and set Fallback to "Use primary browser".
+        </div>
         <div class="flex gap-2">
           <button id="btn-picker-cancel"
             class="flex-1 py-2 text-sm text-text-secondary hover:text-text-primary bg-surface hover:bg-surface-raised rounded-lg transition-colors border border-border">
@@ -356,6 +359,16 @@ function attachPickerListeners() {
     });
   }
 
+  // Tip link → open Settings window to General tab
+  document.getElementById('picker-tip-settings')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    try {
+      await App.OpenSettings();
+    } catch (err) {
+      console.warn('Could not open settings:', err);
+    }
+  });
+
   // Open button
   document.getElementById('btn-picker-open')?.addEventListener('click', openWithSelected);
 
@@ -434,7 +447,7 @@ function renderSettingsMode() {
         ${state.tab === 'browsers' ? renderBrowsers() : ''}
         ${state.tab === 'rules'    ? renderRules()    : ''}
         ${state.tab === 'apps'     ? renderApps()     : ''}
-        ${state.tab === 'maintenance' ? renderMaintenance() : ''}
+        ${state.tab === 'info'     ? renderInfo()     : ''}
       </div>
     </div>
     ${state.editingRule !== null ? renderRuleEditorOverlay() : ''}
@@ -529,7 +542,7 @@ function renderTabs() {
     { id: 'browsers', label: 'Browsers', icon: '\uE774' }, // Slideshow (globe-like)
     { id: 'rules',    label: 'Rules',    icon: '\uE71C' }, // Filter
     { id: 'apps',     label: 'Apps',     icon: '\uE71D' }, // AllApps
-    { id: 'maintenance', label: 'Repair', icon: '\uE90F' }, // Repair
+    { id: 'info',     label: 'Info',     icon: '\uE946' }, // Info
   ];
   return `
     <div class="flex justify-around gap-1 py-2 border-b border-border bg-surface overflow-x-hidden">
@@ -616,7 +629,8 @@ function renderGeneral() {
             </div>
             <div id="default-profile-row" class="flex-1">
               <label class="text-xs text-text-secondary block mb-1">Profile</label>
-              <select id="sel-default-profile" class="w-full bg-surface-raised border border-border rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent">
+              <select id="sel-default-profile" class="w-full bg-surface-raised border border-border rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent${!browserSupportsProfiles(c.defaultBrowser || (state.activeBrowsers[0] && state.activeBrowsers[0].name) || '') ? ' opacity-50 cursor-not-allowed' : ''}"
+                ${!browserSupportsProfiles(c.defaultBrowser || (state.activeBrowsers[0] && state.activeBrowsers[0].name) || '') ? 'disabled' : ''}>
                 ${renderProfileOptions(c.defaultBrowser || (state.activeBrowsers[0] && state.activeBrowsers[0].name) || '', c.defaultProfile)}
               </select>
             </div>
@@ -635,6 +649,12 @@ function renderProfileOptions(browserName, selectedProfile) {
   return browser.profiles.map(p => `
     <option value="${esc(p.id)}" ${selectedProfile === p.id ? 'selected' : ''}>${esc(p.name)}</option>
   `).join('');
+}
+
+// Check if a browser supports profiles (must be Chromium-based AND have profiles detected)
+function browserSupportsProfiles(browserName) {
+  const browser = (state.activeBrowsers || []).find(b => b.name === browserName);
+  return browser && browser.type === 'chromium' && browser.profiles && browser.profiles.length > 0;
 }
 
 // ─── Browsers Tab ─────────────────────────────────────────────────────────────
@@ -663,25 +683,35 @@ function renderBrowserRow(browser, index) {
   const isSelected = state.selectedBrowserPath === browser.path;
   const icon = getBrowserEmoji(browser, '20px');
   const isArchived = !!browser.archived;
+  const isUnsupported = !!browser.unsupported;
 
-  const rowBase = `browser-row flex items-center gap-3 px-4 py-2.5 border-b border-border cursor-pointer transition-colors`;
-  const rowState = isArchived
-    ? 'opacity-50 hover:opacity-70 hover:bg-surface'
-    : (isSelected ? 'bg-accent-muted hover:bg-accent-muted' : 'hover:bg-surface');
+  const rowBase = `browser-row flex items-center gap-3 px-4 py-2.5 border-b border-border transition-colors`;
+  const rowState = isUnsupported
+    ? 'opacity-60 cursor-default'
+    : isArchived
+      ? 'opacity-50 hover:opacity-70 hover:bg-surface cursor-pointer'
+      : (isSelected ? 'bg-accent-muted hover:bg-accent-muted cursor-pointer' : 'hover:bg-surface cursor-pointer');
 
   return `
     <div class="${rowBase} ${rowState}"
          data-browser-index="${index}" data-browser-path="${esc(browser.path)}">
-      <span class="leading-none flex-shrink-0 ${isArchived ? 'grayscale' : ''}">${icon}</span>
-      <span class="flex-1 text-sm ${isArchived ? 'text-text-muted line-through' : 'text-text-primary'}">${esc(browser.name)}</span>
-      ${isDefault ? `<span class="text-xs text-accent-light font-medium px-2 py-0.5 rounded border border-accent-muted bg-accent-muted">Primary</span>` : ''}
-      <label class="toggle flex-shrink-0" title="${isArchived ? 'Include' : 'Exclude'} this browser">
-        <input type="checkbox" class="browser-include-toggle" data-browser-path="${esc(browser.path)}" ${!isArchived ? 'checked' : ''}>
-        <span class="toggle-slider"></span>
-      </label>
+      <span class="leading-none flex-shrink-0 ${isArchived || isUnsupported ? 'grayscale' : ''}">${icon}</span>
+      <div class="flex-1 min-w-0">
+        <span class="text-sm ${isUnsupported ? 'text-text-muted' : isArchived ? 'text-text-muted line-through' : 'text-text-primary'}">${esc(browser.name)}</span>
+        ${isUnsupported ? `<div class="text-[0.65rem] text-yellow-400 mt-0.5 leading-tight">${esc(browser.unsupportedReason || 'This browser is not supported')}</div>` : ''}
+      </div>
+      ${isDefault && !isUnsupported ? `<span class="text-xs text-accent-light font-medium px-2 py-0.5 rounded border border-accent-muted bg-accent-muted">Primary</span>` : ''}
+      ${isUnsupported
+        ? `<span class="text-[0.65rem] text-yellow-400 font-medium px-2 py-0.5 rounded border border-yellow-700 bg-yellow-900 flex-shrink-0">Unsupported</span>`
+        : `<label class="toggle flex-shrink-0" title="${isArchived ? 'Include' : 'Exclude'} this browser">
+            <input type="checkbox" class="browser-include-toggle" data-browser-path="${esc(browser.path)}" ${!isArchived ? 'checked' : ''}>
+            <span class="toggle-slider"></span>
+          </label>`
+      }
     </div>
   `;
 }
+
 
 // ─── Rules Tab ────────────────────────────────────────────────────────────────
 function renderRules() {
@@ -824,56 +854,42 @@ function renderAppRow(app) {
   `;
 }
 
-// ─── Maintenance Tab ──────────────────────────────────────────────────────────
-function renderMaintenance() {
+// ─── Info Tab ─────────────────────────────────────────────────────────────────
+function renderInfo() {
   return `
-    <div class="p-5 space-y-5 overflow-y-auto h-full" id="maintenance-tab">
+    <div class="p-5 space-y-5 overflow-y-auto h-full">
 
       <section class="space-y-2">
-        <h2 class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Browser Definitions</h2>
+        <h2 class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Report an Issue</h2>
         <div class="bg-surface rounded-lg p-4 space-y-3">
           <div class="text-xs text-text-secondary leading-relaxed">
-            Browser definitions control how Link Right detects and launches browsers.
-            Check for updated definitions when browsers change their command-line flags.
+            Found a bug or have a feature request? Open an issue on GitHub:
           </div>
-          <div id="defs-status" class="text-xs text-text-muted">Loading status…</div>
+          <ol class="text-xs text-text-secondary space-y-1.5 list-decimal list-inside leading-relaxed">
+            <li>Click <strong class="text-text-primary">Open Issues</strong> below</li>
+            <li>Click <strong class="text-text-primary">New Issue</strong> on GitHub</li>
+            <li>Give it a clear title and describe the problem or suggestion</li>
+            <li>Submit — we'll take a look!</li>
+          </ol>
+          <button id="btn-open-issues"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-accent hover:bg-accent-glow text-white rounded transition-colors">
+            <span style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.85rem;">&#xE71B;</span>
+            <span>Open Issues</span>
+          </button>
         </div>
       </section>
 
       <section class="space-y-2">
-        <h2 class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Check for Updates</h2>
+        <h2 class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Discussions</h2>
         <div class="bg-surface rounded-lg p-4 space-y-3">
-          <div class="flex items-center gap-3">
-            <button id="btn-check-defs-update"
-              class="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-accent hover:bg-accent-glow text-white rounded transition-colors">
-              <span style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.85rem;">&#xE895;</span>
-              <span>Check for updates</span>
-            </button>
-            <span id="defs-check-spinner" class="hidden text-xs text-text-muted">Checking…</span>
+          <div class="text-xs text-text-secondary leading-relaxed">
+            Have a question, idea, or want to chat with other users? Join the GitHub Discussions.
           </div>
-          <div id="defs-update-result" class="hidden text-xs rounded-lg p-3 border border-border space-y-2"></div>
-        </div>
-      </section>
-
-      <section class="space-y-2">
-        <h2 class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Actions</h2>
-        <div class="bg-surface rounded-lg p-4 space-y-3">
-          <div class="flex flex-wrap gap-2">
-            <button id="btn-revert-defs"
-              class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary bg-surface-raised hover:bg-border-bright border border-border rounded transition-colors">
-              <span style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.85rem;">&#xE7A7;</span>
-              <span>Revert to previous</span>
-            </button>
-            <button id="btn-reset-defs"
-              class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary bg-surface-raised hover:bg-border-bright border border-border rounded transition-colors">
-              <span style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.85rem;">&#xE777;</span>
-              <span>Reset to built-in</span>
-            </button>
-          </div>
-          <div class="text-[0.65rem] text-text-muted leading-relaxed">
-            <strong>Revert</strong> restores the previously active definitions.
-            <strong>Reset</strong> discards all updates and uses the version bundled with this app.
-          </div>
+          <button id="btn-open-discussions"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-accent hover:bg-accent-glow text-white rounded transition-colors">
+            <span style="font-family:'Segoe MDL2 Assets',sans-serif; font-size:0.85rem;">&#xE8F1;</span>
+            <span>Open Discussions</span>
+          </button>
         </div>
       </section>
 
@@ -881,582 +897,6 @@ function renderMaintenance() {
   `;
 }
 
-// Load and display defs status (called after render)
-async function loadDefsStatus() {
-  const el = document.getElementById('defs-status');
-  if (!el) return;
-  try {
-    const status = await App.GetDefsStatus();
-    const source = status.source || 'unknown';
-    const version = status.version || '—';
-    const updated = status.updatedAt ? new Date(status.updatedAt).toLocaleString() : '—';
-    const hasPrevious = status.hasPrevious || false;
-
-    el.innerHTML = `
-      <div class="space-y-1">
-        <div class="flex items-center gap-2">
-          <span class="font-medium text-text-primary">Version:</span>
-          <span>${esc(version)}</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="font-medium text-text-primary">Source:</span>
-          <span class="capitalize">${esc(source)}</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="font-medium text-text-primary">Last updated:</span>
-          <span>${esc(updated)}</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="font-medium text-text-primary">Previous version available:</span>
-          <span>${hasPrevious ? '<span class="text-green-400">Yes</span>' : 'No'}</span>
-        </div>
-      </div>
-    `;
-
-    // Enable/disable revert button based on whether previous exists
-    const btnRevert = document.getElementById('btn-revert-defs');
-    if (btnRevert) {
-      if (!hasPrevious) {
-        btnRevert.classList.add('opacity-50', 'cursor-not-allowed');
-        btnRevert.disabled = true;
-      } else {
-        btnRevert.classList.remove('opacity-50', 'cursor-not-allowed');
-        btnRevert.disabled = false;
-      }
-    }
-  } catch (e) {
-    el.textContent = 'Could not load status: ' + e;
-  }
-}
-
-// ─── Icons Tab ────────────────────────────────────────────────────────────────
-function renderIconsTab() {
-  // Segoe MDL2 Assets — common glyphs with names and codepoints
-  const mdl2Icons = [
-    { code: '\uE700', name: 'GlobalNavButton' },
-    { code: '\uE701', name: 'Wifi' },
-    { code: '\uE702', name: 'Bluetooth' },
-    { code: '\uE703', name: 'Connect' },
-    { code: '\uE704', name: 'InternetSharing' },
-    { code: '\uE705', name: 'VPN' },
-    { code: '\uE706', name: 'Brightness' },
-    { code: '\uE707', name: 'MapPin' },
-    { code: '\uE708', name: 'QuietHours' },
-    { code: '\uE709', name: 'Airplane' },
-    { code: '\uE70A', name: 'Tablet' },
-    { code: '\uE70B', name: 'QuickNote' },
-    { code: '\uE70C', name: 'RememberedDevice' },
-    { code: '\uE70D', name: 'ChevronDown' },
-    { code: '\uE70E', name: 'ChevronUp' },
-    { code: '\uE70F', name: 'Edit' },
-    { code: '\uE710', name: 'Add' },
-    { code: '\uE711', name: 'Cancel' },
-    { code: '\uE712', name: 'More' },
-    { code: '\uE713', name: 'Settings' },
-    { code: '\uE714', name: 'Video' },
-    { code: '\uE715', name: 'Mail' },
-    { code: '\uE716', name: 'People' },
-    { code: '\uE717', name: 'Phone' },
-    { code: '\uE718', name: 'Pin' },
-    { code: '\uE719', name: 'Shop' },
-    { code: '\uE71A', name: 'Stop' },
-    { code: '\uE71B', name: 'Link' },
-    { code: '\uE71C', name: 'Filter' },
-    { code: '\uE71D', name: 'AllApps' },
-    { code: '\uE71E', name: 'Zoom' },
-    { code: '\uE71F', name: 'ZoomOut' },
-    { code: '\uE720', name: 'Microphone' },
-    { code: '\uE721', name: 'Search' },
-    { code: '\uE722', name: 'Camera' },
-    { code: '\uE723', name: 'Attach' },
-    { code: '\uE724', name: 'Send' },
-    { code: '\uE725', name: 'SendFill' },
-    { code: '\uE726', name: 'WalkSolid' },
-    { code: '\uE727', name: 'InPrivate' },
-    { code: '\uE728', name: 'FavoriteList' },
-    { code: '\uE729', name: 'PageSolid' },
-    { code: '\uE72A', name: 'Forward' },
-    { code: '\uE72B', name: 'Back' },
-    { code: '\uE72C', name: 'Refresh' },
-    { code: '\uE72D', name: 'Share' },
-    { code: '\uE72E', name: 'Lock' },
-    { code: '\uE730', name: 'ReportHacked' },
-    { code: '\uE731', name: 'EMI' },
-    { code: '\uE734', name: 'FavoriteStar' },
-    { code: '\uE735', name: 'FavoriteStarFill' },
-    { code: '\uE738', name: 'Remove' },
-    { code: '\uE739', name: 'Checkbox' },
-    { code: '\uE73A', name: 'CheckboxComposite' },
-    { code: '\uE73B', name: 'CheckboxFill' },
-    { code: '\uE73C', name: 'CheckboxIndeterminate' },
-    { code: '\uE73D', name: 'CheckboxCompositeReversed' },
-    { code: '\uE73E', name: 'CheckMark' },
-    { code: '\uE740', name: 'BackSpaceQWERTY' },
-    { code: '\uE741', name: 'SelectAll' },
-    { code: '\uE742', name: 'Orientation' },
-    { code: '\uE743', name: 'Import' },
-    { code: '\uE74A', name: 'TouchPointer' },
-    { code: '\uE74B', name: 'Merge' },
-    { code: '\uE74C', name: 'NewWindow' },
-    { code: '\uE74D', name: 'Mail2' },
-    { code: '\uE74E', name: 'MailFilled' },
-    { code: '\uE74F', name: 'BlockContact' },
-    { code: '\uE750', name: 'AddFriend' },
-    { code: '\uE751', name: 'TouchPointer2' },
-    { code: '\uE752', name: 'GoToStart' },
-    { code: '\uE753', name: 'ZeroBars' },
-    { code: '\uE754', name: 'OneBar' },
-    { code: '\uE755', name: 'TwoBars' },
-    { code: '\uE756', name: 'ThreeBars' },
-    { code: '\uE757', name: 'FourBars' },
-    { code: '\uE758', name: 'World' },
-    { code: '\uE759', name: 'Comment' },
-    { code: '\uE75A', name: 'MusicInfo' },
-    { code: '\uE75B', name: 'ChevronLeft' },
-    { code: '\uE75C', name: 'ChevronRight' },
-    { code: '\uE75D', name: 'InkingTool' },
-    { code: '\uE75E', name: 'Emoji2' },
-    { code: '\uE75F', name: 'GripperBarHorizontal' },
-    { code: '\uE760', name: 'System' },
-    { code: '\uE761', name: 'Personalize' },
-    { code: '\uE762', name: 'Devices' },
-    { code: '\uE763', name: 'SearchAndApps' },
-    { code: '\uE764', name: 'Globe' },
-    { code: '\uE765', name: 'TimeLanguage' },
-    { code: '\uE766', name: 'EaseOfAccess' },
-    { code: '\uE767', name: 'UpdateRestore' },
-    { code: '\uE768', name: 'HangUp' },
-    { code: '\uE769', name: 'ContactInfo' },
-    { code: '\uE76A', name: 'Unpin' },
-    { code: '\uE76B', name: 'Contact' },
-    { code: '\uE76C', name: 'Memo' },
-    { code: '\uE76D', name: 'IncomingCall' },
-    { code: '\uE76E', name: 'Paste' },
-    { code: '\uE76F', name: 'PhoneBook' },
-    { code: '\uE770', name: 'LEDLight' },
-    { code: '\uE771', name: 'Error' },
-    { code: '\uE772', name: 'GripperBarVertical' },
-    { code: '\uE773', name: 'Unlock' },
-    { code: '\uE774', name: 'Slideshow' },
-    { code: '\uE775', name: 'Calendar' },
-    { code: '\uE776', name: 'GripperResize' },
-    { code: '\uE777', name: 'Megaphone' },
-    { code: '\uE778', name: 'Trim' },
-    { code: '\uE779', name: 'NewWindow2' },
-    { code: '\uE77A', name: 'SaveLocal' },
-    { code: '\uE77B', name: 'Color' },
-    { code: '\uE77C', name: 'DataSense' },
-    { code: '\uE77D', name: 'SaveAs' },
-    { code: '\uE77E', name: 'Light' },
-    { code: '\uE77F', name: 'Effects' },
-    { code: '\uE780', name: 'Bus' },
-    { code: '\uE781', name: 'Cloudy' },
-    { code: '\uE782', name: 'PartlyCloudyDay' },
-    { code: '\uE783', name: 'PartlyCloudyNight' },
-    { code: '\uE784', name: 'ClearNight' },
-    { code: '\uE785', name: 'StrongWind' },
-    { code: '\uE786', name: 'Squalls' },
-    { code: '\uE787', name: 'Freezing' },
-    { code: '\uE788', name: 'Hail' },
-    { code: '\uE789', name: 'SleetShowers' },
-    { code: '\uE78A', name: 'Sleet' },
-    { code: '\uE78B', name: 'SnowShowers' },
-    { code: '\uE78C', name: 'Snow' },
-    { code: '\uE78D', name: 'BlowingSnow' },
-    { code: '\uE78E', name: 'Frigid' },
-    { code: '\uE78F', name: 'Fog' },
-    { code: '\uE790', name: 'Haze' },
-    { code: '\uE791', name: 'RainShowers' },
-    { code: '\uE792', name: 'Rain' },
-    { code: '\uE793', name: 'Thunderstorms' },
-    { code: '\uE794', name: 'TStormShowers' },
-    { code: '\uE795', name: 'TStormSnoShowers' },
-    { code: '\uE796', name: 'ChanceOfRain' },
-    { code: '\uE797', name: 'ChanceOfSnow' },
-    { code: '\uE798', name: 'ChanceOfStorms' },
-    { code: '\uE799', name: 'Hot' },
-    { code: '\uE79A', name: 'Blizzard' },
-    { code: '\uE79B', name: 'Snowy' },
-    { code: '\uE79C', name: 'BatterySaver9' },
-    { code: '\uE79D', name: 'BatterySaver10' },
-    { code: '\uE79E', name: 'BatterySaverFull' },
-    { code: '\uE7A5', name: 'Battery0' },
-    { code: '\uE7A6', name: 'Battery1' },
-    { code: '\uE7A7', name: 'Battery2' },
-    { code: '\uE7A8', name: 'Battery3' },
-    { code: '\uE7A9', name: 'Battery4' },
-    { code: '\uE7AA', name: 'Battery5' },
-    { code: '\uE7AB', name: 'Battery6' },
-    { code: '\uE7AC', name: 'Battery7' },
-    { code: '\uE7AD', name: 'Battery8' },
-    { code: '\uE7AE', name: 'Battery9' },
-    { code: '\uE7AF', name: 'Battery10' },
-    { code: '\uE7B0', name: 'BatteryCharging0' },
-    { code: '\uE7B1', name: 'BatteryCharging1' },
-    { code: '\uE7B2', name: 'BatteryCharging2' },
-    { code: '\uE7B3', name: 'BatteryCharging3' },
-    { code: '\uE7B4', name: 'BatteryCharging4' },
-    { code: '\uE7B5', name: 'BatteryCharging5' },
-    { code: '\uE7B6', name: 'BatteryCharging6' },
-    { code: '\uE7B7', name: 'BatteryCharging7' },
-    { code: '\uE7B8', name: 'BatteryCharging8' },
-    { code: '\uE7B9', name: 'BatteryCharging9' },
-    { code: '\uE7BA', name: 'BatteryCharging10' },
-    { code: '\uE7BC', name: 'BatteryUnknown' },
-    { code: '\uE7BE', name: 'WifiAttentionOverlay' },
-    { code: '\uE7BF', name: 'Robots' },
-    { code: '\uE7C0', name: 'Bus2' },
-    { code: '\uE7C1', name: 'Car' },
-    { code: '\uE7C2', name: 'Ferry' },
-    { code: '\uE7C3', name: 'Walk' },
-    { code: '\uE7C4', name: 'Cycling' },
-    { code: '\uE7C5', name: 'TransitConnection' },
-    { code: '\uE7C6', name: 'TransitConnectionDash' },
-    { code: '\uE7C7', name: 'TransitConnectionTransfer' },
-    { code: '\uE7C8', name: 'StatusCircleLeft' },
-    { code: '\uE7C9', name: 'StatusTriangleLeft' },
-    { code: '\uE7CA', name: 'StatusCircleRight' },
-    { code: '\uE7CB', name: 'StatusTriangleRight' },
-    { code: '\uE7CC', name: 'StatusCircleInner' },
-    { code: '\uE7CD', name: 'StatusTriangleInner' },
-    { code: '\uE7CE', name: 'StatusCircleRing' },
-    { code: '\uE7CF', name: 'StatusTriangleOuter' },
-    { code: '\uE7D0', name: 'StatusCircleCheckmark' },
-    { code: '\uE7D1', name: 'StatusCircleInfo' },
-    { code: '\uE7D2', name: 'StatusCircleBlock' },
-    { code: '\uE7D3', name: 'StatusCircleBlock2' },
-    { code: '\uE7D4', name: 'StatusCircleQuestionMark' },
-    { code: '\uE7D5', name: 'StatusCircleSync' },
-    { code: '\uE7D6', name: 'Dial1' },
-    { code: '\uE7D7', name: 'Dial2' },
-    { code: '\uE7D8', name: 'Dial3' },
-    { code: '\uE7D9', name: 'Dial4' },
-    { code: '\uE7DA', name: 'Dial5' },
-    { code: '\uE7DB', name: 'Dial6' },
-    { code: '\uE7DC', name: 'Dial7' },
-    { code: '\uE7DD', name: 'Dial8' },
-    { code: '\uE7DE', name: 'DialShape1' },
-    { code: '\uE7DF', name: 'DialShape2' },
-    { code: '\uE7E0', name: 'DialShape3' },
-    { code: '\uE7E1', name: 'DialShape4' },
-    { code: '\uE7E3', name: 'TollSolid' },
-    { code: '\uE7E4', name: 'TrafficCongestionSolid' },
-    { code: '\uE7E6', name: 'ExploreContentSingle' },
-    { code: '\uE7E7', name: 'CollapseContent' },
-    { code: '\uE7E8', name: 'CollapseContentSingle' },
-    { code: '\uE7E9', name: 'InfoSolid' },
-    { code: '\uE7EA', name: 'GroupList' },
-    { code: '\uE7EB', name: 'CaretBottomRightSolidCenter8' },
-    { code: '\uE7EC', name: 'ProgressRingDots' },
-    { code: '\uE7ED', name: 'Checkbox2' },
-    { code: '\uE7EE', name: 'CheckboxComposite2' },
-    { code: '\uE7EF', name: 'CheckboxIndeterminate2' },
-    { code: '\uE7F0', name: 'CheckboxCompositeReversed2' },
-    { code: '\uE7F1', name: 'CheckMark2' },
-    { code: '\uE7F2', name: 'BackSpaceQWERTYSm' },
-    { code: '\uE7F3', name: 'BackSpaceQWERTYMd' },
-    { code: '\uE7F4', name: 'Swipe' },
-    { code: '\uE7F5', name: 'Fingerprint' },
-    { code: '\uE7F6', name: 'Handwriting' },
-    { code: '\uE7F7', name: 'ChromeBack' },
-    { code: '\uE7F8', name: 'ChromeForward' },
-    { code: '\uE7F9', name: 'ChromeRefresh' },
-    { code: '\uE7FA', name: 'ChromeShare' },
-    { code: '\uE7FB', name: 'ChromeBookmarks' },
-    { code: '\uE7FC', name: 'ChromeBookmarksFill' },
-    { code: '\uE7FD', name: 'ChromeTabsSearch' },
-    { code: '\uE7FE', name: 'ChromeHome' },
-    { code: '\uE7FF', name: 'ChromeAnnotate' },
-    { code: '\uE800', name: 'ChromeAnnotateFill' },
-    { code: '\uE801', name: 'ChromeClose' },
-    { code: '\uE802', name: 'ChromeMinimize' },
-    { code: '\uE803', name: 'ChromeMaximize' },
-    { code: '\uE804', name: 'ChromeRestore' },
-    { code: '\uE805', name: 'Paste2' },
-    { code: '\uE806', name: 'Cut' },
-    { code: '\uE807', name: 'Copy' },
-    { code: '\uE808', name: 'Important' },
-    { code: '\uE809', name: 'MailReply' },
-    { code: '\uE80A', name: 'Sort' },
-    { code: '\uE80B', name: 'MobileTablet' },
-    { code: '\uE80C', name: 'DisconnectDrive' },
-    { code: '\uE80D', name: 'MapDrive' },
-    { code: '\uE80E', name: 'OpenFile' },
-    { code: '\uE80F', name: 'ClearSelection' },
-    { code: '\uE810', name: 'FontDecrease' },
-    { code: '\uE811', name: 'FontIncrease' },
-    { code: '\uE812', name: 'FontSize' },
-    { code: '\uE813', name: 'CellPhone' },
-    { code: '\uE814', name: 'ReShare' },
-    { code: '\uE815', name: 'Tag' },
-    { code: '\uE816', name: 'RepeatOne' },
-    { code: '\uE817', name: 'RepeatAll' },
-    { code: '\uE818', name: 'OutlineStar' },
-    { code: '\uE819', name: 'SolidStar' },
-    { code: '\uE81A', name: 'Calculator' },
-    { code: '\uE81B', name: 'Directions' },
-    { code: '\uE81C', name: 'Target' },
-    { code: '\uE81D', name: 'Library' },
-    { code: '\uE81E', name: 'PhoneBook2' },
-    { code: '\uE81F', name: 'Memo2' },
-    { code: '\uE820', name: 'Microphone2' },
-    { code: '\uE821', name: 'PostUpdate' },
-    { code: '\uE822', name: 'BackToWindow' },
-    { code: '\uE823', name: 'FullScreen' },
-    { code: '\uE824', name: 'NewFolder' },
-    { code: '\uE825', name: 'CalendarReply' },
-    { code: '\uE826', name: 'UnsyncFolder' },
-    { code: '\uE827', name: 'SyncFolder' },
-    { code: '\uE828', name: 'BlockContact2' },
-    { code: '\uE829', name: 'SwitchApps' },
-    { code: '\uE82A', name: 'AddFriend2' },
-    { code: '\uE82B', name: 'TouchPointer3' },
-    { code: '\uE82C', name: 'GoToStart2' },
-    { code: '\uE82D', name: 'ZeroBars2' },
-    { code: '\uE82E', name: 'StopSlideshow' },
-    { code: '\uE82F', name: 'Permissions' },
-    { code: '\uE830', name: 'Highlight' },
-    { code: '\uE831', name: 'DisableUpdates' },
-    { code: '\uE832', name: 'UnfavoriteStarFill' },
-    { code: '\uE833', name: 'Italic' },
-    { code: '\uE834', name: 'Underline' },
-    { code: '\uE835', name: 'Bold' },
-    { code: '\uE836', name: 'MoveToFolder' },
-    { code: '\uE837', name: 'LikeDislike' },
-    { code: '\uE838', name: 'Dislike' },
-    { code: '\uE839', name: 'Like' },
-    { code: '\uE83A', name: 'AlignRight' },
-    { code: '\uE83B', name: 'AlignCenter' },
-    { code: '\uE83C', name: 'AlignLeft' },
-    { code: '\uE83D', name: 'Zoom2' },
-    { code: '\uE83E', name: 'ZoomOut2' },
-    { code: '\uE83F', name: 'OpenWith' },
-    { code: '\uE840', name: 'Rotate' },
-    { code: '\uE841', name: 'Shuffle' },
-    { code: '\uE842', name: 'Movies' },
-    { code: '\uE843', name: 'SelectAll2' },
-    { code: '\uE844', name: 'Orientation2' },
-    { code: '\uE845', name: 'Import2' },
-    { code: '\uE846', name: 'Folder' },
-    { code: '\uE847', name: 'Picture' },
-    { code: '\uE848', name: 'Caption' },
-    { code: '\uE849', name: 'ChromeBackMirrored' },
-    { code: '\uE84A', name: 'ChromeForwardMirrored' },
-    { code: '\uE84B', name: 'ChromeBackMirrored2' },
-    { code: '\uE84C', name: 'ChromeForwardMirrored2' },
-    { code: '\uE84D', name: 'Trim2' },
-    { code: '\uE84E', name: 'AttachCamera' },
-    { code: '\uE84F', name: 'ZoomIn' },
-    { code: '\uE850', name: 'Bookmarks' },
-    { code: '\uE851', name: 'Document' },
-    { code: '\uE852', name: 'ProtectedDocument' },
-    { code: '\uE853', name: 'OpenInNewWindow' },
-    { code: '\uE854', name: 'MailFill' },
-    { code: '\uE855', name: 'ViewAll' },
-    { code: '\uE856', name: 'VideoChat' },
-    { code: '\uE857', name: 'Switch' },
-    { code: '\uE858', name: 'Rename' },
-    { code: '\uE859', name: 'Go' },
-    { code: '\uE85A', name: 'SurfaceHub' },
-    { code: '\uE85B', name: 'Remote' },
-    { code: '\uE85C', name: 'Click' },
-    { code: '\uE85D', name: 'Shuffle2' },
-    { code: '\uE85E', name: 'Movies2' },
-    { code: '\uE85F', name: 'SelectAll3' },
-    { code: '\uE860', name: 'Orientation3' },
-    { code: '\uE861', name: 'Import3' },
-    { code: '\uE862', name: 'Folder2' },
-    { code: '\uE863', name: 'Picture2' },
-    { code: '\uE864', name: 'Caption2' },
-    { code: '\uE865', name: 'Trim3' },
-    { code: '\uE866', name: 'AttachCamera2' },
-    { code: '\uE867', name: 'ZoomIn2' },
-    { code: '\uE868', name: 'Bookmarks2' },
-    { code: '\uE869', name: 'Document2' },
-    { code: '\uE86A', name: 'ProtectedDocument2' },
-    { code: '\uE86B', name: 'Page' },
-    { code: '\uE86C', name: 'Bullets' },
-    { code: '\uE86D', name: 'Comment2' },
-    { code: '\uE86E', name: 'MailReply2' },
-    { code: '\uE86F', name: 'Undo' },
-    { code: '\uE870', name: 'Redo' },
-    { code: '\uE871', name: 'BookmarksMirrored' },
-    { code: '\uE872', name: 'Bullseye' },
-    { code: '\uE873', name: 'NUIFace' },
-    { code: '\uE874', name: 'CalendarMirrored' },
-    { code: '\uE875', name: 'ChevronUpSmall' },
-    { code: '\uE876', name: 'ChevronDownSmall' },
-    { code: '\uE877', name: 'ChevronLeftSmall' },
-    { code: '\uE878', name: 'ChevronRightSmall' },
-    { code: '\uE879', name: 'ChevronUpMed' },
-    { code: '\uE87A', name: 'ChevronDownMed' },
-    { code: '\uE87B', name: 'ChevronLeftMed' },
-    { code: '\uE87C', name: 'ChevronRightMed' },
-    { code: '\uE87D', name: 'Devices2' },
-    { code: '\uE87E', name: 'PC1' },
-    { code: '\uE87F', name: 'PresenceChicklet' },
-    { code: '\uE880', name: 'PresenceChickletVideo' },
-    { code: '\uE881', name: 'Reply' },
-    { code: '\uE882', name: 'HalfStarLeft' },
-    { code: '\uE883', name: 'HalfStarRight' },
-    { code: '\uE884', name: 'CommandPrompt' },
-    { code: '\uE885', name: 'Presentation' },
-    { code: '\uE886', name: 'MultiSelect' },
-    { code: '\uE887', name: 'KeyboardClassic' },
-    { code: '\uE888', name: 'Play' },
-    { code: '\uE889', name: 'Pause' },
-    { code: '\uE88A', name: 'ChevronLeft2' },
-    { code: '\uE88B', name: 'ChevronRight2' },
-    { code: '\uE88C', name: 'InkingToolFill' },
-    { code: '\uE88D', name: 'XBOX' },
-    { code: '\uE88E', name: 'Trackers' },
-    { code: '\uE88F', name: 'Nav2DMapView' },
-    { code: '\uE890', name: 'StreetsideSplitMinimize' },
-    { code: '\uE891', name: 'StreetsideSplitExpand' },
-    { code: '\uE892', name: 'Car2' },
-    { code: '\uE893', name: 'Walk2' },
-    { code: '\uE894', name: 'Bus3' },
-    { code: '\uE895', name: 'TiltUp' },
-    { code: '\uE896', name: 'TiltDown' },
-    { code: '\uE897', name: 'CallForwarding' },
-    { code: '\uE898', name: 'RotateCamera' },
-    { code: '\uE899', name: 'Home' },
-    { code: '\uE89A', name: 'ParkingLocation' },
-    { code: '\uE89B', name: 'MapCompassTop' },
-    { code: '\uE89C', name: 'MapCompassBottom' },
-    { code: '\uE89D', name: 'IncidentTriangle' },
-    { code: '\uE89E', name: 'Touch' },
-    { code: '\uE89F', name: 'MapDirections' },
-    { code: '\uE8A0', name: 'StartPoint' },
-    { code: '\uE8A1', name: 'StopPoint' },
-    { code: '\uE8A2', name: 'EndPoint' },
-    { code: '\uE8A3', name: 'History' },
-    { code: '\uE8A4', name: 'Location' },
-    { code: '\uE8A5', name: 'MapLayers' },
-    { code: '\uE8A6', name: 'Accident' },
-    { code: '\uE8A7', name: 'Work' },
-    { code: '\uE8A8', name: 'Construction' },
-    { code: '\uE8A9', name: 'Recent' },
-    { code: '\uE8AA', name: 'Bank' },
-    { code: '\uE8AB', name: 'DownloadMap' },
-    { code: '\uE8AC', name: 'InkingToolFill2' },
-    { code: '\uE8AD', name: 'HighlightFill' },
-    { code: '\uE8AE', name: 'EraseToolFill' },
-    { code: '\uE8AF', name: 'EraseToolFill2' },
-    { code: '\uE8B0', name: 'Dictionary' },
-    { code: '\uE8B1', name: 'DictionaryAdd' },
-    { code: '\uE8B2', name: 'ToolTip' },
-    { code: '\uE8B3', name: 'ChromeBack2' },
-    { code: '\uE8B4', name: 'ProvisioningPackage' },
-    { code: '\uE8B5', name: 'AddRemoteDevice' },
-    { code: '\uE8B6', name: 'FolderOpen' },
-    { code: '\uE8B7', name: 'Ethernet' },
-    { code: '\uE8B8', name: 'ShareBroadband' },
-    { code: '\uE8B9', name: 'DirectAccess' },
-    { code: '\uE8BA', name: 'DialUp' },
-    { code: '\uE8BB', name: 'DefenderApp' },
-    { code: '\uE8BC', name: 'BatteryCharging11' },
-    { code: '\uE8BD', name: 'Battery11' },
-    { code: '\uE8BE', name: 'Trackers2' },
-    { code: '\uE8BF', name: 'AddSurfaceHub' },
-    { code: '\uE8C0', name: 'DevUpdate' },
-    { code: '\uE8C1', name: 'Unit' },
-    { code: '\uE8C2', name: 'AddTo' },
-    { code: '\uE8C3', name: 'RemoveFrom' },
-    { code: '\uE8C4', name: 'RadioBtnOff' },
-    { code: '\uE8C5', name: 'RadioBtnOn' },
-    { code: '\uE8C6', name: 'RadioBullet' },
-    { code: '\uE8C7', name: 'ExploreContent' },
-    { code: '\uE8C8', name: 'ScrollMode' },
-    { code: '\uE8C9', name: 'ZoomMode' },
-    { code: '\uE8CA', name: 'PanMode' },
-    { code: '\uE8CB', name: 'WiredUSB' },
-    { code: '\uE8CC', name: 'WirelessUSB' },
-    { code: '\uE8CD', name: 'USBSafeConnect' },
-    { code: '\uE8CE', name: 'ActionCenterNotification' },
-    { code: '\uE8CF', name: 'ResetDevice' },
-    { code: '\uE8D0', name: 'Feedback' },
-    { code: '\uE8D1', name: 'Subtitles' },
-    { code: '\uE8D2', name: 'SubtitlesAudio' },
-    { code: '\uE8D3', name: 'OpenFolderHorizontal' },
-    { code: '\uE8D4', name: 'CalendarDay' },
-    { code: '\uE8D5', name: 'CalendarWeek' },
-    { code: '\uE8D6', name: 'Characters' },
-    { code: '\uE8D7', name: 'MailReplyAll' },
-    { code: '\uE8D8', name: 'Read' },
-    { code: '\uE8D9', name: 'ShowBcc' },
-    { code: '\uE8DA', name: 'HideBcc' },
-    { code: '\uE8DB', name: 'Cut2' },
-    { code: '\uE8DC', name: 'PaymentCard' },
-    { code: '\uE8DD', name: 'Copy2' },
-    { code: '\uE8DE', name: 'Important2' },
-    { code: '\uE8DF', name: 'MailReply3' },
-    { code: '\uE8E0', name: 'Sort2' },
-    { code: '\uE8E1', name: 'MobileTablet2' },
-    { code: '\uE8E2', name: 'DisconnectDrive2' },
-    { code: '\uE8E3', name: 'MapDrive2' },
-    { code: '\uE8E4', name: 'OpenFile2' },
-    { code: '\uE8E5', name: 'ClearSelection2' },
-    { code: '\uE8E6', name: 'FontDecrease2' },
-    { code: '\uE8E7', name: 'FontIncrease2' },
-    { code: '\uE8E8', name: 'FontSize2' },
-    { code: '\uE8E9', name: 'CellPhone2' },
-    { code: '\uE8EA', name: 'ReShare2' },
-    { code: '\uE8EB', name: 'Tag2' },
-    { code: '\uE8EC', name: 'RepeatOne2' },
-    { code: '\uE8ED', name: 'RepeatAll2' },
-    { code: '\uE8EE', name: 'Calculator2' },
-    { code: '\uE8EF', name: 'Directions2' },
-    { code: '\uE8F0', name: 'Library2' },
-    { code: '\uE8F1', name: 'ChatBubbles' },
-    { code: '\uE8F2', name: 'PostUpdate2' },
-    { code: '\uE8F3', name: 'NewWindow3' },
-    { code: '\uE8F4', name: 'SaveLocal2' },
-    { code: '\uE8F5', name: 'Color2' },
-    { code: '\uE8F6', name: 'DataSense2' },
-    { code: '\uE8F7', name: 'SaveAs2' },
-    { code: '\uE8F8', name: 'Light2' },
-    { code: '\uE8F9', name: 'Effects2' },
-    { code: '\uE8FA', name: 'Microphone3' },
-    { code: '\uE8FB', name: 'Feedback2' },
-    { code: '\uE8FC', name: 'Subtitles2' },
-    { code: '\uE8FD', name: 'SubtitlesAudio2' },
-    { code: '\uE8FE', name: 'OpenFolderHorizontal2' },
-    { code: '\uE8FF', name: 'CalendarDay2' },
-  ];
-
-  const iconCard = (glyph, name, font) => `
-    <div class="icon-card group relative flex flex-col items-center justify-center gap-1 p-2 rounded-lg bg-surface hover:bg-surface-raised cursor-pointer transition-colors border border-transparent hover:border-border"
-         title="${esc(name)} (${esc(font)})"
-         onclick="navigator.clipboard.writeText('${esc(glyph)}').then(()=>{ const t=this.querySelector('.icon-copied'); if(t){t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),1000);} })">
-      <span class="text-2xl leading-none" style="font-family:'${esc(font)}',sans-serif">${glyph}</span>
-      <span class="text-[9px] text-text-muted text-center leading-tight w-full truncate px-0.5">${esc(name)}</span>
-      <span class="icon-copied hidden absolute inset-0 flex items-center justify-center bg-accent bg-opacity-90 rounded-lg text-white text-[10px] font-semibold">Copied!</span>
-    </div>
-  `;
-
-  return `
-    <div class="p-4 overflow-y-auto h-full space-y-6">
-
-      <div class="text-xs text-text-muted bg-surface rounded-lg px-3 py-2 border border-border flex items-center gap-2">
-        <span style="font-family:'Segoe MDL2 Assets',sans-serif">&#xE82F;</span>
-        Click any icon to copy it to clipboard. Segoe MDL2 Assets is built into Windows 10/11 — no external libraries needed.
-      </div>
-
-      <!-- Segoe MDL2 Assets -->
-      <section>
-        <h2 class="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">
-          Segoe MDL2 Assets
-          <span class="ml-2 text-text-muted font-normal normal-case">${mdl2Icons.length} icons · Windows 10/11 built-in</span>
-        </h2>
-        <div class="grid gap-1" style="grid-template-columns: repeat(auto-fill, minmax(72px, 1fr))">
-          ${mdl2Icons.map(i => iconCard(i.code, i.name, 'Segoe MDL2 Assets')).join('')}
-        </div>
-      </section>
-
-    </div>
-  `;
-}
 
 // ─── Rule Editor Dialog ───────────────────────────────────────────────────────
 function renderRuleEditorOverlay() {
@@ -1516,15 +956,15 @@ function renderRuleEditorOverlay() {
             <label class="block text-xs font-medium text-text-secondary mb-2">Open in browser:</label>
             <div class="bg-surface-raised border border-border rounded-lg p-3 space-y-3" style="background:#1e1e38">
               <div class="flex gap-2">
-                <select id="rule-browser" class="flex-1 bg-surface-raised border border-border rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent">
-                  <option value="">— Select browser —</option>
-                  ${state.activeBrowsers.map(b => `
+              <select id="rule-browser" class="flex-1 bg-surface-raised border border-border rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent">
+                  ${state.activeBrowsers.map((b, i) => `
                     <option value="${esc(b.name)}" data-path="${esc(b.path)}"
-                      ${rule.browser === b.name ? 'selected' : ''}>${esc(b.name)}</option>
+                      ${rule.browser ? (rule.browser === b.name ? 'selected' : '') : (i === 0 ? 'selected' : '')}>${esc(b.name)}</option>
                   `).join('')}
                 </select>
-                <select id="rule-profile" class="flex-1 bg-surface-raised border border-border rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent">
-                  ${renderProfileOptions(rule.browser, rule.profile)}
+                <select id="rule-profile" class="flex-1 bg-surface-raised border border-border rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent${!browserSupportsProfiles(rule.browser || (state.activeBrowsers[0] && state.activeBrowsers[0].name) || '') ? ' opacity-50 cursor-not-allowed' : ''}"
+                  ${!browserSupportsProfiles(rule.browser || (state.activeBrowsers[0] && state.activeBrowsers[0].name) || '') ? 'disabled' : ''}>
+                  ${renderProfileOptions(rule.browser || (state.activeBrowsers[0] && state.activeBrowsers[0].name) || '', rule.profile)}
                 </select>
               </div>
             </div>
@@ -1610,8 +1050,26 @@ function attachListeners() {
     const selProfile = document.getElementById('sel-default-profile');
     if (selDefaultBrowser.value) {
       selProfile.innerHTML = renderProfileOptions(selDefaultBrowser.value, '');
+      // Disable profile dropdown if browser doesn't support profiles
+      selProfile.disabled = !browserSupportsProfiles(selDefaultBrowser.value);
+      if (selProfile.disabled) {
+        selProfile.classList.add('opacity-50', 'cursor-not-allowed');
+      } else {
+        selProfile.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
     }
   });
+
+  // Set initial disabled state for default profile dropdown
+  {
+    const selProfile = document.getElementById('sel-default-profile');
+    if (selDefaultBrowser && selProfile && selDefaultBrowser.value) {
+      selProfile.disabled = !browserSupportsProfiles(selDefaultBrowser.value);
+      if (selProfile.disabled) {
+        selProfile.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+    }
+  }
 
   // Auto-save general settings on any change
   async function saveGeneralSettings() {
@@ -1656,7 +1114,7 @@ function attachListeners() {
   if (btnRefreshBrowsers) btnRefreshBrowsers.addEventListener('click', async () => {
     try {
       state.browsers = await App.RefreshBrowsers();
-      state.activeBrowsers = state.browsers.filter(b => !b.archived);
+      state.activeBrowsers = state.browsers.filter(b => !b.archived && !b.unsupported);
       render();
       showToast('Browser list refreshed', 'info');
     }
@@ -1837,97 +1295,24 @@ function attachListeners() {
     });
   });
 
-  // ── Maintenance tab ──
-  const btnCheckDefsUpdate = document.getElementById('btn-check-defs-update');
-  if (btnCheckDefsUpdate) {
-    // Load status on tab open
-    loadDefsStatus();
-
-    btnCheckDefsUpdate.addEventListener('click', async () => {
-      const spinner = document.getElementById('defs-check-spinner');
-      const resultEl = document.getElementById('defs-update-result');
-      spinner?.classList.remove('hidden');
-      resultEl?.classList.add('hidden');
-      btnCheckDefsUpdate.disabled = true;
-
-      try {
-        const result = await App.CheckForDefsUpdate();
-        spinner?.classList.add('hidden');
-        btnCheckDefsUpdate.disabled = false;
-
-        if (result.error) {
-          resultEl.innerHTML = `
-            <div class="text-red-400">✕ ${esc(result.error)}</div>
-          `;
-          resultEl.classList.remove('hidden');
-        } else if (result.upToDate) {
-          resultEl.innerHTML = `
-            <div class="text-green-400">✓ Definitions are up to date (v${esc(result.currentVersion)})</div>
-          `;
-          resultEl.classList.remove('hidden');
-        } else {
-          // Update available
-          resultEl.innerHTML = `
-            <div class="text-accent-light font-medium">Update available: v${esc(result.newVersion)}</div>
-            ${result.notes ? `<div class="text-text-secondary">${esc(result.notes)}</div>` : ''}
-            <div class="flex gap-2 mt-2">
-              <button id="btn-apply-defs-update"
-                class="px-3 py-1.5 text-xs font-medium bg-accent hover:bg-accent-glow text-white rounded transition-colors">
-                Apply update
-              </button>
-              <button id="btn-keep-current-defs"
-                class="px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary bg-surface-raised hover:bg-border-bright border border-border rounded transition-colors">
-                Keep current
-              </button>
-            </div>
-          `;
-          resultEl.classList.remove('hidden');
-
-          // Wire apply/keep buttons
-          document.getElementById('btn-apply-defs-update')?.addEventListener('click', async () => {
-            try {
-              await App.ApplyDefsUpdate();
-              showToast('Definitions updated successfully', 'success');
-              loadDefsStatus();
-              resultEl.classList.add('hidden');
-            } catch (e) {
-              showToast('Failed to apply update: ' + e, 'error');
-            }
-          });
-          document.getElementById('btn-keep-current-defs')?.addEventListener('click', () => {
-            resultEl.classList.add('hidden');
-          });
-        }
-      } catch (e) {
-        spinner?.classList.add('hidden');
-        btnCheckDefsUpdate.disabled = false;
-        resultEl.innerHTML = `<div class="text-red-400">✕ Check failed: ${esc(String(e))}</div>`;
-        resultEl.classList.remove('hidden');
-      }
-    });
-  }
-
-  const btnRevertDefs = document.getElementById('btn-revert-defs');
-  if (btnRevertDefs) btnRevertDefs.addEventListener('click', async () => {
-    if (!confirm('Revert to the previous browser definitions?')) return;
-    try {
-      await App.RevertDefsUpdate();
-      showToast('Reverted to previous definitions', 'success');
-      loadDefsStatus();
-    } catch (e) {
-      showToast('Revert failed: ' + e, 'error');
+  // ── Info tab ──
+  const btnOpenIssues = document.getElementById('btn-open-issues');
+  if (btnOpenIssues) btnOpenIssues.addEventListener('click', () => {
+    const url = 'https://github.com/getsetbro/linkright_repo/issues';
+    if (window.runtime && window.runtime.BrowserOpenURL) {
+      window.runtime.BrowserOpenURL(url);
+    } else {
+      window.open(url, '_blank');
     }
   });
 
-  const btnResetDefs = document.getElementById('btn-reset-defs');
-  if (btnResetDefs) btnResetDefs.addEventListener('click', async () => {
-    if (!confirm('Reset to the built-in definitions bundled with this app? All updates will be discarded.')) return;
-    try {
-      await App.ResetDefsToBuiltin();
-      showToast('Reset to built-in definitions', 'success');
-      loadDefsStatus();
-    } catch (e) {
-      showToast('Reset failed: ' + e, 'error');
+  const btnOpenDiscussions = document.getElementById('btn-open-discussions');
+  if (btnOpenDiscussions) btnOpenDiscussions.addEventListener('click', () => {
+    const url = 'https://github.com/getsetbro/linkright_repo/discussions';
+    if (window.runtime && window.runtime.BrowserOpenURL) {
+      window.runtime.BrowserOpenURL(url);
+    } else {
+      window.open(url, '_blank');
     }
   });
 
@@ -1977,7 +1362,26 @@ function attachRuleEditorListeners() {
   if (ruleBrowser) ruleBrowser.addEventListener('change', () => {
     const profileSel = document.getElementById('rule-profile');
     profileSel.innerHTML = renderProfileOptions(ruleBrowser.value, '');
+    // Disable profile dropdown if browser doesn't support profiles
+    profileSel.disabled = !browserSupportsProfiles(ruleBrowser.value);
+    if (profileSel.disabled) {
+      profileSel.classList.add('opacity-50', 'cursor-not-allowed');
+    } else {
+      profileSel.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
   });
+
+  // Set initial disabled state for profile dropdown based on selected browser
+  {
+    const profileSel = document.getElementById('rule-profile');
+    const browserSel = document.getElementById('rule-browser');
+    if (profileSel && browserSel && browserSel.value) {
+      profileSel.disabled = !browserSupportsProfiles(browserSel.value);
+      if (profileSel.disabled) {
+        profileSel.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+    }
+  }
 
   // Add condition (top + button)
   document.getElementById('btn-add-condition')?.addEventListener('click', () => {

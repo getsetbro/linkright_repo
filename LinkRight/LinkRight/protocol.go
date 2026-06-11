@@ -113,6 +113,8 @@ func LaunchProtocolURL(rawURL string) error {
 	// The registered command line may look like:
 	//   "C:\path\to\app.exe" "%1"
 	//   C:\path\to\app.exe %1
+	// Some handlers use %L, %V, %U or no placeholder at all.
+	hadPlaceholder := strings.Contains(app.CommandLine, "%1")
 	cmdLine := strings.ReplaceAll(app.CommandLine, "%1", rawURL)
 
 	// Split into exe + args using the same logic as extractExePath
@@ -120,11 +122,19 @@ func LaunchProtocolURL(rawURL string) error {
 	var args []string
 
 	rest := strings.TrimSpace(cmdLine)
+	if rest == "" {
+		// Edge case: command line was empty/whitespace after substitution
+		return fmt.Errorf("empty command line for protocol %s", scheme)
+	}
+
 	if rest[0] == '"' {
 		// Quoted exe path
 		end := strings.Index(rest[1:], `"`)
 		if end >= 0 {
 			rest = strings.TrimSpace(rest[end+2:])
+		} else {
+			// No closing quote — no args to parse
+			rest = ""
 		}
 	} else {
 		parts := strings.SplitN(rest, " ", 2)
@@ -138,6 +148,12 @@ func LaunchProtocolURL(rawURL string) error {
 	// Parse remaining args (handle quoted tokens)
 	if rest != "" {
 		args = splitArgs(rest)
+	}
+
+	// If the original command had no %1 placeholder, append the URL as a
+	// trailing argument so the target application actually receives it.
+	if !hadPlaceholder {
+		args = append(args, rawURL)
 	}
 
 	cmd := exec.Command(exePath, args...)

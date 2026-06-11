@@ -117,13 +117,13 @@ func (a *App) GetBrowsers() []Browser {
 	return a.browsers
 }
 
-// GetActiveBrowsers returns only non-archived browsers for use in the picker
-// and rule selectors.
+// GetActiveBrowsers returns only non-archived, supported browsers for use in
+// the picker and rule selectors.
 func (a *App) GetActiveBrowsers() []Browser {
 	all := a.GetBrowsers()
 	var active []Browser
 	for _, b := range all {
-		if !b.Archived {
+		if !b.Archived && !b.Unsupported {
 			active = append(active, b)
 		}
 	}
@@ -174,6 +174,7 @@ func (a *App) UnarchiveBrowser(path string) error {
 	return nil
 }
 
+
 // applyArchivedState stamps the Archived flag onto each browser based on the
 // saved list of archived paths.
 func applyArchivedState(browsers []Browser, archivedPaths []string) []Browser {
@@ -187,6 +188,16 @@ func applyArchivedState(browsers []Browser, archivedPaths []string) []Browser {
 		result[i] = b
 	}
 	return result
+}
+
+
+// OpenSettings launches the Link Right settings window (a new process without
+// a URL argument). Used from the picker to let the user change settings.
+func (a *App) OpenSettings() error {
+	exePath := GetExePath()
+	cmd := exec.Command(exePath)
+	// Note: do NOT use hideWindow(cmd) here — we want the settings GUI to be visible.
+	return cmd.Start()
 }
 
 // ---- Rule Methods ----

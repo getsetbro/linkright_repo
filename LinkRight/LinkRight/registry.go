@@ -97,21 +97,11 @@ func RegisterApp() error {
 
 // UnregisterApp removes all Link Right registry entries
 func UnregisterApp() error {
-	// Remove StartMenuInternet entry
-	registry.DeleteKey(registry.CURRENT_USER, `SOFTWARE\Clients\StartMenuInternet\`+appName+`\Capabilities\URLAssociations`)
-	registry.DeleteKey(registry.CURRENT_USER, `SOFTWARE\Clients\StartMenuInternet\`+appName+`\Capabilities`)
-	registry.DeleteKey(registry.CURRENT_USER, `SOFTWARE\Clients\StartMenuInternet\`+appName+`\shell\open\command`)
-	registry.DeleteKey(registry.CURRENT_USER, `SOFTWARE\Clients\StartMenuInternet\`+appName+`\shell\open`)
-	registry.DeleteKey(registry.CURRENT_USER, `SOFTWARE\Clients\StartMenuInternet\`+appName+`\shell`)
-	registry.DeleteKey(registry.CURRENT_USER, `SOFTWARE\Clients\StartMenuInternet\`+appName+`\DefaultIcon`)
-	registry.DeleteKey(registry.CURRENT_USER, `SOFTWARE\Clients\StartMenuInternet\`+appName)
+	// Remove StartMenuInternet entry (recursive delete handles any subkeys)
+	deleteRegKeyTree(registry.CURRENT_USER, `SOFTWARE\Clients\StartMenuInternet\`+appName)
 
 	// Remove URL class
-	registry.DeleteKey(registry.CURRENT_USER, `SOFTWARE\Classes\`+urlClassName+`\shell\open\command`)
-	registry.DeleteKey(registry.CURRENT_USER, `SOFTWARE\Classes\`+urlClassName+`\shell\open`)
-	registry.DeleteKey(registry.CURRENT_USER, `SOFTWARE\Classes\`+urlClassName+`\shell`)
-	registry.DeleteKey(registry.CURRENT_USER, `SOFTWARE\Classes\`+urlClassName+`\DefaultIcon`)
-	registry.DeleteKey(registry.CURRENT_USER, `SOFTWARE\Classes\`+urlClassName)
+	deleteRegKeyTree(registry.CURRENT_USER, `SOFTWARE\Classes\`+urlClassName)
 
 	// Remove from RegisteredApplications
 	k, err := registry.OpenKey(registry.CURRENT_USER, `SOFTWARE\RegisteredApplications`, registry.SET_VALUE)

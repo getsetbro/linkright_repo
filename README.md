@@ -48,4 +48,4 @@ cd LinkRight/installer
 
 ## License
 
-See repository for details.
+© Seth Broweleit. All rights reserved.

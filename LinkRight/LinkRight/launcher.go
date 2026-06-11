@@ -6,12 +6,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
+	"unsafe"
 )
 
 // LaunchBrowser opens the given URL in the specified browser with the given profile.
-// profileID is the profile directory name (e.g. "Profile 1", "Default") for Chromium,
-// or the profile directory name (e.g. "xxxxxxxx.default-release") for Firefox.
-// Firefox uses --profile with the full path to avoid triggering the profile chooser.
+// profileID is the profile directory name (e.g. "Profile 1", "Default") for Chromium.
+// Only Chromium-based browsers support profiles; non-Chromium browsers ignore the
+// profileID and are launched with just the URL.
 // If the specified profile no longer exists, the browser is launched without a
 // profile argument (graceful fallback).
 func LaunchBrowser(browserPath, profileID, url string) error {
@@ -20,9 +22,50 @@ func LaunchBrowser(browserPath, profileID, url string) error {
 	}
 
 	args := buildLaunchArgs(browserPath, profileID, url)
+
+	// MSIX App Execution Aliases (stubs in WindowsApps) do not reliably
+	// forward command-line arguments when invoked directly via exec.Command.
+	// Use ShellExecuteW which correctly launches MSIX-packaged apps like Arc
+	// and passes the URL/arguments through to the application.
+	if isMSIXPath(browserPath) {
+		return shellExecuteOpen(browserPath, strings.Join(args, " "))
+	}
+
 	cmd := exec.Command(browserPath, args...)
 	hideWindow(cmd)
 	return cmd.Start()
+}
+
+// isMSIXPath returns true if the browser path is an MSIX App Execution Alias
+// (located under %LOCALAPPDATA%\Microsoft\WindowsApps).
+func isMSIXPath(browserPath string) bool {
+	return strings.Contains(strings.ToLower(browserPath), `\microsoft\windowsapps\`)
+}
+
+// shellExecuteOpen launches a program with parameters using the Windows
+// ShellExecuteW API. This is the correct way to launch MSIX app execution
+// aliases because CreateProcess (used by exec.Command) does not reliably
+// pass arguments through MSIX alias stubs.
+func shellExecuteOpen(exePath, params string) error {
+	verb, _ := syscall.UTF16PtrFromString("open")
+	file, _ := syscall.UTF16PtrFromString(exePath)
+	var paramsPtr *uint16
+	if params != "" {
+		paramsPtr, _ = syscall.UTF16PtrFromString(params)
+	}
+
+	ret, _, _ := procShellExecute.Call(
+		0,
+		uintptr(unsafe.Pointer(verb)),
+		uintptr(unsafe.Pointer(file)),
+		uintptr(unsafe.Pointer(paramsPtr)),
+		0,
+		0, // SW_HIDE — no extra window
+	)
+	if ret <= 32 {
+		return fmt.Errorf("ShellExecuteW failed with code %d", ret)
+	}
+	return nil
 }
 
 // buildLaunchArgs constructs the command-line arguments for launching a browser.
@@ -32,51 +75,6 @@ func buildLaunchArgs(browserPath, profileID, url string) []string {
 	return DefsBuildLaunchArgs(browserPath, profileID, url)
 }
 
-// firefoxProfilePath resolves a Firefox profile ID (directory name like
-// "xxxxxxxx.default-release") to its full filesystem path.
-// It checks both the standard Firefox and Firefox Developer Edition profile
-// directories based on the browser's executable path.
-// Returns "" if the profile doesn't exist (triggering graceful fallback).
-func firefoxProfilePath(browserPath, profileID string) string {
-	if profileID == "" {
-		return ""
-	}
-
-	appData := os.Getenv("APPDATA")
-	if appData == "" {
-		return ""
-	}
-
-	// Determine which Firefox variant this is based on the exe path
-	pathLower := strings.ToLower(browserPath)
-	isDevEdition := strings.Contains(pathLower, "developer edition") ||
-		strings.Contains(pathLower, "firefox dev")
-
-	// Try the variant-specific profiles directory first
-	var profilesDirs []string
-	if isDevEdition {
-		profilesDirs = append(profilesDirs, filepath.Join(appData, "Mozilla", "Firefox Developer Edition", "Profiles"))
-	}
-	// Always check the standard Firefox profiles dir as a fallback
-	profilesDirs = append(profilesDirs, filepath.Join(appData, "Mozilla", "Firefox", "Profiles"))
-
-	for _, profilesDir := range profilesDirs {
-		fullPath := filepath.Join(profilesDir, profileID)
-		if info, err := os.Stat(fullPath); err == nil && info.IsDir() {
-			return fullPath
-		}
-	}
-
-	// The profileID might already be a full path (unlikely but handle gracefully)
-	if filepath.IsAbs(profileID) {
-		if info, err := os.Stat(profileID); err == nil && info.IsDir() {
-			return profileID
-		}
-	}
-
-	// Profile not found — return empty to trigger fallback (launch without profile)
-	return ""
-}
 
 // chromiumProfileExists checks whether a Chromium profile directory exists on disk.
 // This is used as a fallback guard: if a user deletes a profile but the rule still

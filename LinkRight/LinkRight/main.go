@@ -44,20 +44,23 @@ func main() {
 		mutexNamePtr, _ := syswindows.UTF16PtrFromString(mutexName)
 		mutex, mutexErr := syswindows.CreateMutex(nil, false, mutexNamePtr)
 		if mutexErr != nil {
-			// CreateMutex failed — exit anyway
+			// CreateMutex returns ERROR_ALREADY_EXISTS as an error when the
+			// mutex already exists (the handle is still valid in that case).
+			if mutexErr == syswindows.ERROR_ALREADY_EXISTS {
+				// Another settings window is already open — exit silently
+				syswindows.CloseHandle(mutex)
+				os.Exit(0)
+			}
+			// Any other error — cannot enforce single-instance, exit to be safe
 			os.Exit(0)
 		}
 		// Store in package-level var so the handle stays alive for the process lifetime.
 		singleInstanceMutex = mutex
-		if syswindows.GetLastError() == syswindows.ERROR_ALREADY_EXISTS {
-			// Another settings window is already open — exit silently
-			os.Exit(0)
-		}
 	}
 
 	// Window dimensions and options depend on mode
-	width, height := 900, 650
-	minWidth, minHeight := 700, 500
+	width, height := 700, 600
+	minWidth, minHeight := 500, 500
 	frameless := true
 	alwaysOnTop := false
 	resizable := true
@@ -113,4 +116,3 @@ func extractURLArg(args []string) string {
 	}
 	return ""
 }
-

@@ -26,15 +26,14 @@ Link Right is a lightweight Windows utility that sits between Windows and your b
 
 ## Installation
 
-1. Download `LinkRight.exe` (single file, ~10–15 MB)
-2. Place it anywhere you like (e.g. `C:\Users\YourName\Apps\LinkRight.exe`)
-3. Run it — no installer, no admin prompt
-4. On first launch, Link Right automatically registers itself as a browser in Windows
-5. Open **Windows Settings → Default Apps**, find **Link Right**, and set it as your default browser for `http` and `https`
-6. Done — all links now route through Link Right
+1. Download **LinkRight_Setup.exe** from [GitHub Releases](https://github.com/getsetbro/linkright_repo/releases)
+2. Run the installer — no admin prompt required
+3. On first launch, Link Right automatically registers itself as a browser in Windows
+4. Open **Windows Settings → Default Apps**, find **Link Right**, and set it as your default browser for `http` and `https`
+5. Done — all links now route through Link Right
 
 > ### ⚠️ "Windows protected your PC" warning
-> When you first run LinkRight (or the installer), Windows SmartScreen may show a blue warning because the app isn't signed with a paid certificate. This is normal for small internal tools and is safe to bypass:
+> When you first run the installer, Windows SmartScreen may show a blue warning because the app isn't signed with a paid certificate. This is normal for small internal tools and is safe to bypass:
 > 1. Click **"More info"**
 > 2. Click **"Run anyway"**
 >
@@ -44,7 +43,7 @@ Link Right is a lightweight Windows utility that sits between Windows and your b
 
 ## Setting Up Rules
 
-1. Open Link Right (double-click the exe)
+1. Open Link Right (from Start Menu or system tray)
 2. Go to the **Rules** tab
 3. Click **+** to add a rule:
    - **Title** — a friendly name for the rule
@@ -96,19 +95,14 @@ The **Browsers** tab shows all detected browsers and profiles. You can:
 
 ## Uninstalling
 
-To completely remove Link Right from your PC, run:
+Use **Windows Settings → Apps → Link Right → Uninstall**, or run the uninstaller from the Start Menu. This will:
 
-```
-LinkRight.exe --uninstall
-```
-
-This will:
 - Remove all registry entries written by Link Right (HKCU only)
 - Delete `%APPDATA%\LinkRight\` (your rules and settings)
-- Remove any Start Menu shortcuts
+- Remove Start Menu shortcuts
 - Prompt you to reassign your default browser in Windows Settings if Link Right was set as default
 
-No admin rights required. Your PC will be left in the exact state it was before Link Right was installed.
+No admin rights required.
 
 ---
 
@@ -118,7 +112,7 @@ No admin rights required. Your PC will be left in the exact state it was before 
 |------|-------------|
 | *(no args)* | Open settings UI |
 | `http://...` or `https://...` | Route a URL through rules (used by Windows when Link Right is the default browser) |
-| `--uninstall` | Run the uninstaller |
+| `--uninstall` | Run the uninstaller (registry cleanup) |
 | `--dev` | Skip auto-registration (for development/testing) |
 
 ---
@@ -152,8 +146,7 @@ No admin rights required. Your PC will be left in the exact state it was before 
 Requirements: Go 1.23+, Node.js 18+, [Wails CLI v2](https://wails.io)
 
 ```bash
-git clone <repo>
-cd LinkRight
+cd LinkRight/LinkRight
 wails build
 # Output: build/bin/LinkRight.exe
 ```
@@ -163,9 +156,9 @@ For live development:
 wails dev
 ```
 
-For frontend-only development (no Go/registry needed):
+To build the installer, install [Inno Setup 6](https://jrsoftware.org/isinfo.php) then:
 ```bash
-cd frontend
-npm run dev
-# Opens at http://localhost:5173 with mock data
+cd LinkRight/installer
+"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" LinkRight.iss
+# Output: output/LinkRight_Setup.exe
 ```
